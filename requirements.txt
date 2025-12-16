@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+paramiko
+python-dotenv
+gunicorn
+requests
+cryptography

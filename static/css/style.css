@@ -1,0 +1,28 @@
+/* Custom Scrollbar for nicer look */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1; 
+}
+::-webkit-scrollbar-thumb {
+    background: #888; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #555; 
+}
+
+/* Helper utility for active/completed states */
+.status-running { color: #2563eb; }
+.status-success { color: #16a34a; }
+.status-error { color: #dc2626; }
+
+/* Ensure modal textarea looks like code */
+textarea {
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: scroll;
+}
