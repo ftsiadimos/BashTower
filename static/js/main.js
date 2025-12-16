@@ -18,58 +18,70 @@ const API = {
     JOBS: '/api/jobs', // Used for GET job history and details
     RUNNER: '/api/run', // Used for POST job execution
     SATELLITE_CONFIG: '/api/satellite/config', 
-    SATELLITE_SYNC: '/api/satellite/sync' 
+    SATELLITE_SYNC: '/api/satellite/sync',
+    CRONJOBS: '/api/cronjobs' 
 };
 
 const App = {
     // FIX: Change delimiters to avoid conflict with Jinja2/server-side templating
     delimiters: ['[[', ']]'],
     
-    data() {
-        return {
-            currentView: 'dashboard',
-            
-            // --- Template Management ---
-            templates: [],
-            editingTemplate: false,
-            templateForm: { id: null, name: '', script: '' },
+        data() {
+            return {
+                currentView: 'dashboard',
+                
+                // --- Template Management ---
+                templates: [],
+                editingTemplate: false,
+                templateForm: { id: null, name: '', script: '' },
 
-            // --- Host Management ---
-            hosts: [],
-            hostForm: { name: '', hostname: '', username: '', port: 22 },
+                // --- Host Management ---
+                hosts: [],
+                hostForm: { name: '', hostname: '', username: '', port: 22 },
 
-            // --- Key Management ---
-            keys: [],
-            keyForm: { name: '', private_key: '' },
+                // --- Key Management ---
+                keys: [],
+                keyForm: { name: '', private_key: '' },
 
-            // --- Group Management (NEW) ---
-            groups: [],
-            editingGroup: false,
-            groupForm: { id: null, name: '', host_ids: [] },
+                // --- Group Management (NEW) ---
+                groups: [],
+                editingGroup: false,
+                groupForm: { id: null, name: '', host_ids: [] },
 
-            // --- Job Runner (MODIFIED) ---
-            isRunning: false,
-            jobHistory: [],
-            activeJob: null,
-            jobPollingInterval: null,
-            runForm: {
-                template_id: null,
-                selection_type: 'groups', // NEW: 'groups' or 'hosts'
-                host_ids: [], // NEW: For single host selection
-                group_ids: [],
-                key_id: null
-            },
+                // --- Job Runner (MODIFIED) ---
+                isRunning: false,
+                jobHistory: [],
+                activeJob: null,
+                jobPollingInterval: null,
+                runForm: {
+                    template_id: null,
+                    selection_type: 'groups', // NEW: 'groups' or 'hosts'
+                    host_ids: [], // NEW: For single host selection
+                    group_ids: [],
+                    key_id: null
+                },
 
-            // --- AI Troubleshooter ---
-            llmLoading: false,
+                // --- AI Troubleshooter ---
+                llmLoading: false,
 
-            // --- Satellite Sync (Unchanged) ---
-            satelliteConfig: { url: '', username: '', ssh_username: 'ec2-user' },
-            satelliteForm: { url: '', username: '', password: '', ssh_username: 'ec2-user' }, 
-            satelliteLoading: false,
-            syncMessage: ''
-        };
-    },
+                // --- Satellite Sync (Unchanged) ---
+                satelliteConfig: { url: '', username: '', ssh_username: 'ec2-user' },
+                satelliteForm: { url: '', username: '', password: '', ssh_username: 'ec2-user' }, 
+                satelliteLoading: false,
+                syncMessage: '',
+                cronjobs: [],
+                editingCronJob: false,
+                cronJobForm: { id: null, name: '', schedule: '', template_id: null, key_id: null, host_ids: [], enabled: true },
+                // New state for cron history view with pagination
+
+                cronHistory: [],
+                cronHistoryPage: 1,
+                cronHistoryPerPage: 14,
+                cronHistoryTotal: 0,
+                cronHistoryPollingInterval: null,
+                activeCronLog: null
+            };
+        },
     
     // Computed property to calculate selected hosts from groups (MODIFIED to check selection_type)
     computed: {
@@ -93,11 +105,16 @@ const App = {
         this.fetchData();
         // Start polling job history on mount
         this.jobPollingInterval = setInterval(this.fetchJobHistory, 5000); 
+        // Start polling cron history on mount
+        this.cronHistoryPollingInterval = setInterval(this.fetchCronHistory, 10000); 
     },
 
     unmounted() {
         if (this.jobPollingInterval) {
             clearInterval(this.jobPollingInterval);
+        }
+        if (this.cronHistoryPollingInterval) {
+            clearInterval(this.cronHistoryPollingInterval);
         }
     },
 
@@ -110,7 +127,9 @@ const App = {
                 this.fetchGroups(), // NEW
                 this.fetchKeys(),
                 this.fetchJobHistory(),
-                this.fetchSatelliteConfig()
+                this.fetchSatelliteConfig(),
+                this.fetchCronJobs(), // NEW: Fetch cron jobs on app load
+                this.fetchCronHistory() // NEW: Load cron history on app load
             ]);
         },
 
@@ -157,6 +176,33 @@ const App = {
             }
         },
 
+        async fetchCronJobs() {
+            try {
+                const response = await fetch(API.CRONJOBS);
+                this.cronjobs = await response.json();
+            } catch (error) {
+                console.error('Error fetching cron jobs:', error);
+            }
+        },
+
+        // Fetch cron execution history (logs) with pagination
+        async fetchCronHistory(page = this.cronHistoryPage, perPage = this.cronHistoryPerPage) {
+            try {
+                const url = new URL('/api/cronhistory', window.location.origin);
+                url.searchParams.append('page', page);
+                url.searchParams.append('per_page', perPage);
+                const response = await fetch(url);
+                const data = await response.json();
+                // Expected shape: { logs: [], page: X, per_page: Y, total: Z }
+                this.cronHistory = data.logs || [];
+                this.cronHistoryPage = data.page || page;
+                this.cronHistoryPerPage = data.per_page || perPage;
+                this.cronHistoryTotal = data.total || 0;
+            } catch (error) {
+                console.error('Error fetching cron history:', error);
+            }
+        },
+
         async viewJob(job_id, forceUpdate = false) {
             if (this.activeJob && this.activeJob.id === job_id && !forceUpdate) {
                 return;
@@ -177,6 +223,43 @@ const App = {
             }
 
             this.activeJob = jobDetails;
+        },
+
+        // Show detailed log output for a cron job entry
+        showCronLogOutput(log) {
+            this.activeCronLog = log;
+        },
+
+        // Pagination controls for cron history
+        nextCronHistoryPage() {
+            const maxPage = Math.ceil(this.cronHistoryTotal / this.cronHistoryPerPage);
+            if (this.cronHistoryPage < maxPage) {
+                this.cronHistoryPage += 1;
+                this.fetchCronHistory(this.cronHistoryPage, this.cronHistoryPerPage);
+            }
+        },
+        prevCronHistoryPage() {
+            if (this.cronHistoryPage > 1) {
+                this.cronHistoryPage -= 1;
+                this.fetchCronHistory(this.cronHistoryPage, this.cronHistoryPerPage);
+            }
+        },
+
+        // Clean all cron logs from the database
+        async cleanCronLogs() {
+            if (!confirm('Delete ALL cron logs? This cannot be undone.')) {
+                return;
+            }
+            try {
+                const response = await fetch('/api/cronhistory/clean', { method: 'DELETE' });
+                const data = await response.json();
+                console.log(data.message);
+                // Refresh history after cleaning
+                this.fetchCronHistory(1, this.cronHistoryPerPage);
+                this.cronHistoryPage = 1;
+            } catch (err) {
+                console.error('Error cleaning cron logs:', err);
+            }
         },
 
 
@@ -532,8 +615,109 @@ ${log.stderr}
             } else {
                 this.syncMessage = `Error during synchronization: ${result.error || 'Unknown error'}`;
             }
-        }
+        },
 
+        // --- Cron Job Methods (NEW) ---
+        getTemplateNameById(templateId) {
+            const template = this.templates.find(t => t.id === templateId);
+            return template ? template.name : 'Unknown Template';
+        },
+
+        getKeyNameById(keyId) {
+            const key = this.keys.find(k => k.id === keyId);
+            return key ? key.name : 'Unknown Key';
+        },
+
+        getHostNamesByIds(hostIds) {
+            return hostIds.map(id => {
+                const host = this.hosts.find(h => h.id === id);
+                return host ? host.name : `Unknown Host ('${id}')`;
+            }).join(', ');
+        },
+
+        startNewCronJob() {
+            this.editingCronJob = true;
+            this.cronJobForm = { id: null, name: '', schedule: '', template_id: null, key_id: null, host_ids: [], enabled: true };
+            if (this.templates.length > 0) {
+                this.cronJobForm.template_id = this.templates[0].id;
+            }
+            if (this.keys.length > 0) {
+                this.cronJobForm.key_id = this.keys[0].id;
+            }
+        },
+
+        editCronJob(job) {
+            this.editingCronJob = true;
+            this.cronJobForm = {
+                id: job.id,
+                name: job.name,
+                schedule: job.schedule,
+                template_id: job.template_id,
+                key_id: job.key_id,
+                host_ids: [...job.host_ids],
+                enabled: job.enabled
+            };
+        },
+
+        cancelCronJobEdit() {
+            this.editingCronJob = false;
+            this.cronJobForm = { id: null, name: '', schedule: '', template_id: null, key_id: null, host_ids: [], enabled: true };
+        },
+
+        toggleSelectAllCronJobHosts(event) {
+            if (event.target.checked) {
+                this.cronJobForm.host_ids = this.hosts.map(h => h.id);
+            } else {
+                this.cronJobForm.host_ids = [];
+            }
+        },
+
+        async saveCronJob() {
+            if (!this.cronJobForm.name || !this.cronJobForm.schedule || !this.cronJobForm.template_id || !this.cronJobForm.key_id || this.cronJobForm.host_ids.length === 0) {
+                alert('Please fill all required fields and select at least one host.');
+                return;
+            }
+
+            try {
+                const method = this.cronJobForm.id ? 'PUT' : 'POST';
+                const url = this.cronJobForm.id ? `${API.CRONJOBS}/${this.cronJobForm.id}` : API.CRONJOBS;
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.cronJobForm)
+                });
+
+                if (response.ok) {
+                    await this.fetchCronJobs();
+                    this.cancelCronJobEdit();
+                } else {
+                    alert('Failed to save cron job.');
+                }
+            } catch (error) {
+                console.error('Error saving cron job:', error);
+                alert('An error occurred while saving the cron job.');
+            }
+        },
+
+        async deleteCronJob(id) {
+            if (confirm('Are you sure you want to delete this cron job?')) {
+                try {
+                    const response = await fetch(`${API.CRONJOBS}/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        await this.fetchCronJobs();
+                    } else {
+                        alert('Failed to delete cron job.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting cron job:', error);
+                    alert('An error occurred while deleting the cron job.');
+                }
+            }
+        }
     }
 };
 

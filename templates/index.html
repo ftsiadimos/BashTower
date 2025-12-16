@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bash Tower</title>
+    <link rel="icon" href="/static/img/BashTower.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="/static/css/style.css">
@@ -24,6 +25,12 @@
                 <button @click="currentView = 'templates'" :class="{'bg-blue-600': currentView === 'templates'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
                     <i class="fas fa-file-code w-6"></i> Templates
                 </button>
+                 <button @click="currentView = 'cronjobs'" :class="{'bg-blue-600': currentView === 'cronjobs'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
+                    <i class="fas fa-clock w-6"></i> Cron Jobs
+                </button>
+                <button @click="currentView = 'cronHistory'" :class="{'bg-blue-600': currentView === 'cronHistory'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
+                    <i class="fas fa-history w-6"></i> Cron History
+                </button>
                 <button @click="currentView = 'hosts'" :class="{'bg-blue-600': currentView === 'hosts'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
                     <i class="fas fa-server w-6"></i> Hosts
                 </button>
@@ -36,6 +43,7 @@
                 <button @click="currentView = 'satellite'" :class="{'bg-blue-600': currentView === 'satellite'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
                     <i class="fas fa-satellite-dish w-6"></i> Satellite Sync
                 </button>
+
                 <button @click="currentView = 'about'" :class="{'bg-blue-600': currentView === 'about'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
                     <i class="fas fa-info-circle w-6"></i> About
                 </button>
@@ -380,6 +388,142 @@
                             </a>
                         </p>
                         <p><strong>Version:</strong> 1.0.0 BashTower</p>
+                    </div>
+                     <img src="/static/img/BashTower.png" alt="BashTower Logo" class="mx-auto  w-52 h-52">
+                </div>
+
+                <div v-if="currentView === 'cronjobs'">
+                    <div class="flex justify-between mb-4">
+                        <h2 class="text-lg font-bold">Manage Cron Jobs</h2>
+                        <button @click="startNewCronJob" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            <i class="fas fa-plus mr-1"></i> New Cron Job
+                        </button>
+                    </div>
+
+                    <div v-if="editingCronJob" class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-500">
+                        <h3 class="text-lg font-bold mb-4">[[ cronJobForm.id ? 'Edit Cron Job: ' + cronJobForm.name : 'Create New Cron Job' ]]</h3>
+                        <div class="space-y-4">
+                            <input v-model="cronJobForm.name" placeholder="Cron Job Name (e.g., Daily Backup)" class="border p-2 rounded w-full">
+                            <input v-model="cronJobForm.schedule" placeholder="Cron Schedule (e.g., 0 0 * * * for daily midnight)" class="border p-2 rounded w-full">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Select Template</label>
+                                <select v-model="cronJobForm.template_id" class="mt-1 block w-full border border-gray-300 rounded p-2">
+                                    <option v-for="t in templates" :value="t.id" :key="t.id">[[ t.name ]]</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Select SSH Key</label>
+                                <select v-model="cronJobForm.key_id" class="mt-1 block w-full border border-gray-300 rounded p-2">
+                                    <option v-for="k in keys" :value="k.id" :key="k.id">[[ k.name ]]</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Select Target Hosts</label>
+                                <div class="flex items-center mb-2">
+                                    <input type="checkbox" id="selectAllCronJobHosts" @change="toggleSelectAllCronJobHosts" class="mr-2">
+                                    <label for="selectAllCronJobHosts" class="text-sm text-gray-700">Select All Hosts</label>
+                                </div>
+                                <div class="mt-2 h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50">
+                                    <label v-for="host in hosts" :key="host.id" class="flex items-center space-x-2">
+                                        <input type="checkbox" :value="host.id" v-model="cronJobForm.host_ids">
+                                        <span>[[ host.name ]] ([[ host.hostname ]])</span>
+                                    </label>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-2">Selected hosts: [[ cronJobForm.host_ids.length ]]</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" id="cronJobEnabled" v-model="cronJobForm.enabled">
+                                <label for="cronJobEnabled" class="text-sm font-medium text-gray-700">Enabled</label>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button @click="saveCronJob" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                                    <i class="fas fa-save mr-1"></i> Save Cron Job
+                                </button>
+                                <button @click="cancelCronJobEdit" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4">
+                        <div v-for="job in cronjobs" :key="job.id" class="bg-white p-4 rounded shadow flex justify-between items-center">
+                            <div>
+                                <div class="font-bold">[[ job.name ]]</div>
+                                <div class="text-sm text-gray-600">Schedule: [[ job.schedule ]]</div>
+                                <div class="text-xs text-gray-500">Template: [[ getTemplateNameById(job.template_id) ]]</div>
+                                <div class="text-xs text-gray-500">Key: [[ getKeyNameById(job.key_id) ]]</div>
+                                <div class="text-xs text-gray-500">Hosts: [[ getHostNamesByIds(job.host_ids) ]]</div>
+                                <div class="text-xs text-gray-500">Status: <span :class="{'text-green-600': job.enabled, 'text-red-600': !job.enabled}">[[ job.enabled ? 'Enabled' : 'Disabled' ]]</span></div>
+                                <div v-if="job.last_run" class="text-xs text-gray-500">Last Run: [[ new Date(job.last_run).toLocaleString() ]]</div>
+                                <div v-if="job.next_run" class="text-xs text-gray-500">Next Run: [[ new Date(job.next_run).toLocaleString() ]]</div>
+                            </div>
+                            <div class="space-x-2">
+                                <button @click="editCronJob(job)" class="text-blue-600 hover:text-blue-800">Edit</button>
+                                <button @click="deleteCronJob(job.id)" class="text-red-600 hover:text-red-800">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="currentView === 'cronHistory'">
+                    <h2 class="text-lg font-bold mb-4">Cron Job History</h2>
+                    <div class="bg-white rounded shadow overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Host</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Run At</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Output</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr v-for="log in cronHistory" :key="log.id">
+                                    <td class="px-6 py-4 whitespace-nowrap">[[ log.cron_job_name ]]</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">[[ log.template_name ]]</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">[[ log.hostname ]]</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">[[ new Date(log.created_at).toLocaleString() ]]</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span :class="{
+                                            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
+                                            'bg-green-100 text-green-800': log.status === 'success',
+                                            'bg-red-100 text-red-800': log.status === 'error' || log.status === 'connection_failed',
+                                            'bg-yellow-100 text-yellow-800': log.status === 'running'
+                                        }">[[ log.status ]]</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <button @click="showCronLogOutput(log)" class="text-blue-600 hover:text-blue-800">View</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Clean logs button -->
+                    <div class="flex justify-end mb-2">
+                        <button @click="cleanCronLogs" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+                            <i class="fas fa-trash-alt mr-1"></i> Clean Logs
+                        </button>
+                    </div>
+                    <!-- Pagination controls -->
+                    <div class="flex justify-between items-center mt-2">
+                        <button @click="prevCronHistoryPage" :disabled="cronHistoryPage <= 1" class="bg-gray-300 text-gray-800 px-2 py-1 rounded disabled:opacity-50">Previous</button>
+                        <span>Page [[ cronHistoryPage ]] of [[ Math.ceil(cronHistoryTotal / cronHistoryPerPage) ]]</span>
+                        <button @click="nextCronHistoryPage" :disabled="cronHistoryPage >= Math.ceil(cronHistoryTotal / cronHistoryPerPage)" class="bg-gray-300 text-gray-800 px-2 py-1 rounded disabled:opacity-50">Next</button>
+                    </div>
+                    <div v-if="activeCronLog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" @click.self="activeCronLog = null">
+                        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold">Output for [[ activeCronLog.cron_job_name ]] on [[ activeCronLog.hostname ]]</h3>
+                                <button @click="activeCronLog = null" class="text-gray-500 hover:text-gray-700">Close</button>
+                            </div>
+                            <div class="bg-slate-900 text-green-400 font-mono text-xs overflow-x-auto p-3 rounded h-64">
+                                <pre>[[ activeCronLog.stdout ]]</pre>
+                                <pre class="text-red-400">[[ activeCronLog.stderr ]]</pre>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

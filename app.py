@@ -9,12 +9,22 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Table, Column, Integer, ForeignKey
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+import atexit
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///bashtower.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Configure Scheduler
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+# Shut down the scheduler when exiting the app
+atexit.register(lambda: scheduler.shutdown())
 
 # =========================================================
 # --- ALL DATABASE MODELS MUST BE DEFINED HERE ---
@@ -75,6 +85,35 @@ class SatelliteConfig(db.Model):
     password = db.Column(db.String(100), nullable=True)
     # NEW: Default SSH Username for imported hosts
     ssh_username = db.Column(db.String(100), default='ec2-user', nullable=True) 
+
+# NEW: CronJob model for representing scheduled tasks
+class CronJob(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    schedule = db.Column(db.String(100), nullable=False)  # Cron string, e.g., "0 0 * * *"
+    template_id = db.Column(db.Integer, db.ForeignKey('template.id'), nullable=False)
+    template = db.relationship('Template', backref='cron_jobs')
+    key_id = db.Column(db.Integer, db.ForeignKey('ssh_key.id'), nullable=False)
+    ssh_key = db.relationship('SSHKey', backref='cron_jobs')
+    host_ids = db.Column(db.Text, nullable=False) # Store as comma-separated string of host IDs
+    enabled = db.Column(db.Boolean, default=True)
+    last_run = db.Column(db.DateTime, nullable=True)
+    next_run = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Model to store execution logs for each cron job run (per host)
+class CronJobLog(db.Model):
+    __tablename__ = 'cron_job_log'
+    id = db.Column(db.Integer, primary_key=True)
+    # Allow nullable temporarily to avoid integrity errors on existing rows
+    cron_job_id = db.Column(db.Integer, db.ForeignKey('cron_job.id'), nullable=True)
+    hostname = db.Column(db.String(200))
+    stdout = db.Column(db.Text)
+    stderr = db.Column(db.Text)
+    status = db.Column(db.String(20))  # success, error, connection_failed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Relationship back to CronJob
+    cron_job = db.relationship('CronJob', backref='logs')
 
 # =========================================================
 # --- GUARANTEED DATABASE INITIALIZATION FIX ---
@@ -542,6 +581,257 @@ def sync_satellite_hosts():
 
 # --- END SATELLITE API ENDPOINTS ---
 
+# API: Cron Jobs
+@app.route('/api/cronjobs', methods=['GET', 'POST'])
+def handle_cronjobs():
+    if request.method == 'POST':
+        data = request.json
+        new_cron_job = CronJob(
+            name=data['name'],
+            schedule=data['schedule'],
+            template_id=data['template_id'],
+            key_id=data['key_id'],
+            host_ids=','.join(map(str, data['host_ids'])) if data['host_ids'] else '',
+            enabled=data.get('enabled', True)
+        )
+        db.session.add(new_cron_job)
+        db.session.commit()
+        # Schedule the newly created cron job
+        try:
+            trigger = CronTrigger.from_crontab(new_cron_job.schedule)
+            scheduler.add_job(
+                func=execute_cron_job,
+                trigger=trigger,
+                args=[new_cron_job.id],
+                id=str(new_cron_job.id),
+                replace_existing=True,
+            )
+        except Exception as e:
+            print(f"Failed to schedule cron job {new_cron_job.id}: {e}")
+        return jsonify(new_cron_job.id), 201
+    else:
+        cron_jobs = CronJob.query.all()
+        return jsonify([
+            {
+                'id': c.id,
+                'name': c.name,
+                'schedule': c.schedule,
+                'template_id': c.template_id,
+                'key_id': c.key_id,
+                'host_ids': [int(x) for x in c.host_ids.split(',')] if c.host_ids else [],
+                'enabled': c.enabled,
+                'last_run': c.last_run.isoformat() if c.last_run else None,
+                'next_run': c.next_run.isoformat() if c.next_run else None,
+                'created_at': c.created_at.isoformat()
+            } for c in cron_jobs
+        ])
+
+@app.route('/api/cronjobs/<int:cron_job_id>', methods=['PUT', 'DELETE'])
+def handle_cron_job_item(cron_job_id):
+    cron_job = CronJob.query.get_or_404(cron_job_id)
+
+    if request.method == 'PUT':
+        data = request.json
+        cron_job.name = data['name']
+        cron_job.schedule = data['schedule']
+        cron_job.template_id = data['template_id']
+        cron_job.key_id = data['key_id']
+        cron_job.host_ids = ','.join(map(str, data['host_ids'])) if data['host_ids'] else ''
+        cron_job.enabled = data.get('enabled', True)
+        db.session.commit()
+        return jsonify({'message': 'Cron job updated'})
+    else:
+        db.session.delete(cron_job)
+        db.session.commit()
+        return jsonify({'message': 'Cron job deleted'})
+
+@app.route('/api/cronjobs/<int:cron_job_id>/logs', methods=['GET'])
+def get_cron_job_logs(cron_job_id):
+    """
+    Retrieves execution logs for a specific cron job.
+    """
+    cron_job = CronJob.query.get_or_404(cron_job_id)
+    logs = CronJobLog.query.filter_by(cron_job_id=cron_job.id).order_by(CronJobLog.created_at.desc()).all()
+
+    return jsonify([
+        {
+            'id': log.id,
+            'hostname': log.hostname,
+            'stdout': log.stdout,
+            'stderr': log.stderr,
+            'status': log.status,
+            'created_at': log.created_at.isoformat()
+        } for log in logs
+    ])
+
+# ------------------------------------------------------------
+# API: Cron History (new endpoint to provide execution logs for all cron jobs)
+# ------------------------------------------------------------
+@app.route('/api/cronhistory', methods=['GET'])
+def get_cron_history():
+    """Return a list of cron job execution logs with related job and template info.
+
+    The front‑end expects each entry to contain:
+        - cron_job_name
+        - template_name
+        - hostname
+        - created_at (ISO string)
+        - status
+        - stdout
+        - stderr
+    """
+    # Join CronJobLog with CronJob and Template to gather the needed fields.
+    logs = (
+        db.session.query(CronJobLog)
+        .outerjoin(CronJob, CronJobLog.cron_job_id == CronJob.id)
+        .outerjoin(Template, CronJob.template_id == Template.id)
+        .order_by(CronJobLog.created_at.desc())
+        .all()
+    )
+
+    result = []
+    for log in logs:
+        # Guard against missing relationships (e.g., old rows without foreign keys)
+        cron_job_name = getattr(log.cron_job, 'name', None)
+        template_name = None
+        if getattr(log, 'cron_job', None):
+            template_obj = getattr(log.cron_job, 'template', None)
+            if template_obj:
+                template_name = template_obj.name
+        result.append({
+            'id': log.id,
+            'cron_job_name': cron_job_name,
+            'template_name': template_name,
+            'hostname': log.hostname,
+            'created_at': log.created_at.isoformat() if log.created_at else None,
+            'status': log.status,
+            'stdout': log.stdout,
+            'stderr': log.stderr,
+        })
+
+    # Pagination parameters
+    # Pagination parameters (default page 1, 20 items per page)
+    # Pagination parameters (default page 1, 20 items per page)
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 20))
+    except ValueError:
+        page = 1
+        per_page = 20
+
+    # Calculate pagination
+    total = len(result)
+    offset = (page - 1) * per_page
+    paginated = result[offset:offset + per_page]
+
+    return jsonify({
+        'logs': paginated,
+        'page': page,
+        'per_page': per_page,
+        'total': total
+    })
+
+# ------------------------------------------------------------
+# API: Clean all cron logs (DELETE)
+# ------------------------------------------------------------
+@app.route('/api/cronhistory/clean', methods=['DELETE'])
+def clean_cron_history():
+    """Delete all rows from the CronJobLog table.
+
+    Returns a JSON message with the number of rows removed.
+    """
+    # Use a direct delete query for efficiency
+    deleted = db.session.query(CronJobLog).delete(synchronize_session=False)
+    db.session.commit()
+    return jsonify({'message': f'Cron logs cleaned, {deleted} rows removed.'})
+
+ 
+
+# ---------------------------------------------------------------------------
+# Scheduler integration for CronJob entries
+# ---------------------------------------------------------------------------
+
+def execute_cron_job(cron_job_id):
+    """Execute a CronJob by ID.
+    This runs the associated template on all hosts defined in the CronJob and
+    records per‑host output in the CronJobLog table.
+    """
+    with app.app_context():
+        cron = CronJob.query.get(cron_job_id)
+        if not cron or not cron.enabled:
+            return
+
+        # Resolve hosts
+        host_ids = [int(x) for x in cron.host_ids.split(',')] if cron.host_ids else []
+        hosts = Host.query.filter(Host.id.in_(host_ids)).all()
+        template = cron.template
+        key = cron.ssh_key
+
+        for host in hosts:
+            log_entry = CronJobLog(
+                cron_job_id=cron.id,
+                hostname=host.hostname,
+                status='running',
+                stdout='',
+                stderr=''
+            )
+            db.session.add(log_entry)
+            db.session.commit()
+            try:
+                key_file = io.StringIO(key.private_key)
+                try:
+                    pkey = paramiko.RSAKey.from_private_key(key_file)
+                except Exception:
+                    key_file.seek(0)
+                    pkey = paramiko.Ed25519Key.from_private_key(key_file)
+
+                client = paramiko.SSHClient()
+                client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                client.connect(
+                    hostname=host.hostname,
+                    port=host.port,
+                    username=host.username,
+                    pkey=pkey,
+                    timeout=10
+                )
+                stdin, stdout, stderr = client.exec_command('bash -s')
+                stdin.write(template.content.encode('utf-8'))
+                stdin.channel.shutdown_write()
+                exit_status = stdout.channel.recv_exit_status()
+                out_str = stdout.read().decode('utf-8')
+                err_str = stderr.read().decode('utf-8')
+                log_entry.stdout = out_str
+                log_entry.stderr = err_str
+                log_entry.status = 'success' if exit_status == 0 else 'error'
+                client.close()
+            except Exception as e:
+                log_entry.stderr = f"Connection or Authentication Error: {e}"
+                log_entry.status = 'connection_failed'
+            finally:
+                db.session.commit()
+
+        # Update last_run timestamp
+        cron.last_run = datetime.utcnow()
+        db.session.commit()
+
+def load_cron_jobs_into_scheduler():
+    """Load all enabled CronJob entries into the APScheduler instance."""
+    with app.app_context():
+        for cron in CronJob.query.filter_by(enabled=True).all():
+            try:
+                trigger = CronTrigger.from_crontab(cron.schedule)
+                scheduler.add_job(
+                    func=execute_cron_job,
+                    trigger=trigger,
+                    args=[cron.id],
+                    id=str(cron.id),
+                    replace_existing=True,
+                )
+            except Exception as e:
+                print(f"Failed to schedule cron job {cron.id}: {e}")
+
+# Load cron jobs after DB initialization
+load_cron_jobs_into_scheduler()
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
