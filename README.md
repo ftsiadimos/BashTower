@@ -3,6 +3,11 @@
 **Bash Tower** is a lightweight, web‑based UI for running Bash scripts and ad‑hoc SSH commands across multiple hosts.  
 It is aimed at home‑lab enthusiasts, small teams, or anyone who needs a simple way to orchestrate tasks without the overhead of full‑blown automation platforms.
 
+## Screenshots
+
+<img src="mis/image1.png" width="800" />
+Dashboard view – list of running containers, status, and actions.
+
 ## Table of Contents
 
 - [Features](#features)
