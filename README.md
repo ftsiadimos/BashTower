@@ -40,10 +40,10 @@ cd BashTower
 # Pull the pre‑built image
 docker pull ftsiadimos/bashtower
 
-# Run the container (exposes port 8000)
+# Run the container (exposes port 1008)
 docker run -d \
   --name bashtower \
-  -p 8000:8000 \
+  -p 1008:1008 \
   -v $(pwd)/instance:/app/instance \
   ftsiadimos/bashtower
 ```
@@ -94,7 +94,7 @@ pip install -r [requirements.txt]
 flask db upgrade   # creates SQLite DB at instance/bashtower.sqlite
 
 # Run the server
-flask run --host=0.0.0.0 --port=8000
+flask run --host=0.0.0.0 --port=1008
 
 ```
 
