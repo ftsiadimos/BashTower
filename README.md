@@ -1,5 +1,5 @@
 # Bash Tower 
-<img src="mis/bashtower.png" width="100" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);">   
+<img src="mis/bashtower.png" width="100"/>   
 
 **Bash Tower** is a lightweight, web‑based UI for running Bash scripts and ad‑hoc SSH commands across multiple hosts.  
 It is aimed at home‑lab enthusiasts, small teams, or anyone who needs a simple way to orchestrate tasks without the overhead of full‑blown automation platforms.
