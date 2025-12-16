@@ -104,9 +104,15 @@ flask run --host=0.0.0.0 --port=1008
 - Add hosts – Provide name, hostname/IP, SSH user, and port.
 - Add SSH keys – Paste a private key (RSA/PEM).
 - Create a template – Write a Bash script, give it a name, and save.
-- Run a job – Select a template, pick one or more hosts/groups, and click Run.
+- Run a job – Select a template, pick one or more hosts/groups, and click **Run**.
 - Monitor output – The UI polls the back‑end for logs; errors can be sent to the built‑in analyzer.
-- Satellite sync (optional) – Fill the Satellite URL and credentials, then click Sync Hosts Now.
+- **Cron Jobs** – Use the “Schedule” tab to create recurring jobs.  
+  1. Open the **Templates** view and click **Schedule** next to the desired template.  
+  2. Choose the target hosts or groups.  
+  3. Enter a cron expression (e.g., `0 2 * * *` for daily at 02:00 UTC).  
+  4. Click **Save Schedule**.  
+  The job will now run automatically according to the cron schedule and its history will appear in the **Job History** view.
+- Satellite sync (optional) – Fill the Satellite URL and credentials, then click **Sync Hosts Now**.
 
 
 
