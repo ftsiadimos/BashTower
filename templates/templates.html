@@ -1,0 +1,316 @@
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Templates</h1>
+            <p class="text-gray-500 mt-1">Manage your script templates (Bash & Python)</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" v-model="templateSearchQuery" placeholder="Search templates..." 
+                    class="pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition">
+            </div>
+            <button @click="startNewTemplate" class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-medium flex items-center gap-2 shadow-md">
+                <i class="fas fa-plus"></i> Create Template
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-file-code text-blue-600"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-800">[[ templates.length ]]</p>
+                <p class="text-xs text-gray-500">Total Templates</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-terminal text-gray-600"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-800">[[ templates.filter(t => (t.script_type || 'bash') === 'bash').length ]]</p>
+                <p class="text-xs text-gray-500">Bash Scripts</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fab fa-python text-yellow-600"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-800">[[ templates.filter(t => t.script_type === 'python').length ]]</p>
+                <p class="text-xs text-gray-500">Python Scripts</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-code text-green-600"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-800">[[ templates.reduce((sum, t) => sum + (t.script ? t.script.split('\\n').length : 0), 0) ]]</p>
+                <p class="text-xs text-gray-500">Total Lines</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-robot text-purple-600"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-800" :class="aiConfigured ? 'text-green-600' : 'text-gray-400'">[[ aiConfigured ? 'Ready' : 'Off' ]]</p>
+                <p class="text-xs text-gray-500">AI Assistant</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Editor Modal -->
+    <div v-if="editingTemplate" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="cancelEdit">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 flex justify-between items-center"
+                :class="templateForm.script_type === 'python' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-blue-600 to-indigo-700'">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i :class="templateForm.script_type === 'python' ? 'fab fa-python' : (templateForm.id ? 'fas fa-edit' : 'fas fa-plus')" class="text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">[[ templateForm.id ? 'Edit Template' : 'New Template' ]]</h3>
+                        <p class="text-white/70 text-sm">Create or modify [[ templateForm.script_type === 'python' ? 'Python' : 'Bash' ]] scripts</p>
+                    </div>
+                </div>
+                <button @click="cancelEdit" class="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-5">
+                <!-- Script Type Selector -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-code mr-1 text-gray-400"></i> Script Type
+                    </label>
+                    <div class="flex gap-3">
+                        <button type="button" 
+                            @click="templateForm.script_type = 'bash'"
+                            :class="[
+                                'flex-1 py-3 px-4 rounded-xl font-medium text-sm transition flex items-center justify-center gap-3 border-2',
+                                templateForm.script_type === 'bash' 
+                                    ? 'bg-gray-900 text-green-400 border-gray-700 ring-2 ring-green-500' 
+                                    : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                            ]">
+                            <i class="fas fa-terminal text-lg"></i>
+                            <div class="text-left">
+                                <p class="font-semibold">Bash Script</p>
+                                <p class="text-xs opacity-70">Shell commands & scripts</p>
+                            </div>
+                        </button>
+                        <button type="button"
+                            @click="templateForm.script_type = 'python'"
+                            :class="[
+                                'flex-1 py-3 px-4 rounded-xl font-medium text-sm transition flex items-center justify-center gap-3 border-2',
+                                templateForm.script_type === 'python' 
+                                    ? 'bg-slate-800 text-yellow-400 border-slate-700 ring-2 ring-yellow-500' 
+                                    : 'bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-200'
+                            ]">
+                            <i class="fab fa-python text-lg"></i>
+                            <div class="text-left">
+                                <p class="font-semibold">Python Script</p>
+                                <p class="text-xs opacity-70">Python 3 automation</p>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Name Input -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-tag mr-1 text-gray-400"></i> Template Name
+                    </label>
+                    <input v-model="templateForm.name" placeholder="e.g., Deployment Script, Backup Job..." 
+                        class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                </div>
+
+                <!-- Script Editor -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i :class="templateForm.script_type === 'python' ? 'fab fa-python' : 'fas fa-terminal'" class="mr-1 text-gray-400"></i> 
+                        [[ templateForm.script_type === 'python' ? 'Python' : 'Bash' ]] Script
+                    </label>
+                    <div class="relative rounded-xl overflow-hidden border border-gray-700">
+                        <div class="px-4 py-2 flex items-center justify-between border-b border-gray-700"
+                            :class="templateForm.script_type === 'python' ? 'bg-slate-800' : 'bg-gray-800'">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                <span :class="templateForm.script_type === 'python' ? 'text-yellow-400' : 'text-gray-400'" class="text-xs ml-2 font-mono">
+                                    [[ templateForm.script_type === 'python' ? 'python3' : 'bash' ]]
+                                </span>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                <span>[[ templateForm.script ? templateForm.script.split('\\n').length : 0 ]] lines</span>
+                                <span class="mx-2">•</span>
+                                <span>[[ templateForm.script ? templateForm.script.length : 0 ]] chars</span>
+                            </div>
+                        </div>
+                        <textarea v-model="templateForm.script" 
+                            :placeholder="templateForm.script_type === 'python' ? '#!/usr/bin/env python3\n\n# Your Python script here...' : '#!/bin/bash\n\n# Your script here...'" 
+                            :class="templateForm.script_type === 'python' ? 'bg-slate-900 text-yellow-300' : 'bg-gray-900 text-green-400'"
+                            class="w-full p-4 font-mono text-sm h-72 focus:outline-none resize-none" 
+                            style="font-family: 'Courier New', Consolas, 'Liberation Mono', monospace;"></textarea>
+                    </div>
+                </div>
+
+                <!-- AI Script Assistant -->
+                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-200 overflow-hidden">
+                    <div class="p-4 bg-gradient-to-r from-purple-100/50 to-indigo-100/50 border-b border-purple-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-robot text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-purple-800">AI Script Assistant</span>
+                                <span v-if="!aiConfigured" class="ml-2 text-xs text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">Configure in Settings</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex gap-2">
+                            <input v-model="scriptAIPrompt" 
+                                   @keyup.enter="askScriptAI"
+                                   :disabled="scriptAILoading"
+                                   :placeholder="'Describe what you want the ' + (templateForm.script_type === 'python' ? 'Python' : 'bash') + ' script to do...'"
+                                   class="flex-1 px-4 py-2.5 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none transition">
+                            <button @click="askScriptAI" 
+                                    :disabled="scriptAILoading || !aiConfigured"
+                                    class="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium flex items-center gap-2">
+                                <i :class="scriptAILoading ? 'fas fa-spinner fa-spin' : 'fas fa-magic'"></i>
+                                [[ scriptAILoading ? 'Generating...' : 'Generate' ]]
+                            </button>
+                        </div>
+
+                        <!-- AI Response -->
+                        <div v-if="scriptAIResponse" class="mt-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-purple-700 flex items-center gap-1">
+                                    <i class="fas fa-sparkles"></i> AI Suggestion
+                                </span>
+                                <div class="flex gap-2">
+                                    <button @click="applyAIScript" 
+                                            v-if="!scriptAIResponse.startsWith('Error:') && !scriptAIResponse.startsWith('Network error:')"
+                                            class="px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition font-medium flex items-center gap-1">
+                                        <i class="fas fa-check"></i> Apply
+                                    </button>
+                                    <button @click="clearAIResponse" class="px-3 py-1.5 bg-gray-500 text-white text-xs rounded-lg hover:bg-gray-600 transition font-medium flex items-center gap-1">
+                                        <i class="fas fa-times"></i> Dismiss
+                                    </button>
+                                </div>
+                            </div>
+                            <pre :class="templateForm.script_type === 'python' ? 'bg-slate-900 text-yellow-300' : 'bg-gray-900 text-green-400'" 
+                                class="p-4 rounded-lg text-sm overflow-x-auto max-h-48 overflow-y-auto font-mono">[[ scriptAIResponse ]]</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-gray-50 border-t flex justify-end gap-3">
+                <button @click="cancelEdit" class="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
+                    Cancel
+                </button>
+                <button @click="saveTemplate" class="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition font-medium flex items-center gap-2 shadow-md">
+                    <i class="fas fa-save"></i> Save Template
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div v-for="t in filteredTemplates" :key="t.id" 
+            class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden group">
+            <!-- Header -->
+            <div class="p-4 flex items-center gap-3"
+                :class="t.script_type === 'python' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-blue-500 to-indigo-600'">
+                <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i :class="t.script_type === 'python' ? 'fab fa-python' : 'fas fa-terminal'" class="text-white text-lg"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-bold text-white truncate" :title="t.name">[[ t.name ]]</h4>
+                    <span class="text-xs text-white/70 font-mono">[[ t.script_type === 'python' ? 'Python' : 'Bash' ]] • ID: [[ t.id ]]</span>
+                </div>
+            </div>
+            
+            <!-- Script Preview -->
+            <div class="h-28 overflow-hidden relative group-hover:h-36 transition-all duration-300"
+                :class="t.script_type === 'python' ? 'bg-slate-900' : 'bg-gray-950'">
+                <div class="p-4">
+                    <pre :class="t.script_type === 'python' ? 'text-yellow-300' : 'text-green-400'" 
+                        class="text-xs font-mono leading-relaxed">[[ t.script ? t.script.substring(0, 200) + (t.script.length > 200 ? '...' : '') : '# Empty script' ]]</pre>
+                </div>
+                <div class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t to-transparent"
+                    :class="t.script_type === 'python' ? 'from-slate-900' : 'from-gray-950'"></div>
+            </div>
+            
+            <!-- Stats Bar -->
+            <div class="px-4 py-3 bg-gray-50 border-t border-b border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-4 text-xs text-gray-500">
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-code" :class="t.script_type === 'python' ? 'text-yellow-500' : 'text-blue-500'"></i>
+                        [[ t.script ? t.script.split('\\n').length : 0 ]] lines
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <i class="fas fa-text-width text-purple-500"></i>
+                        [[ t.script ? t.script.length : 0 ]] chars
+                    </span>
+                </div>
+                <span v-if="t.script && ((t.script_type === 'python' && t.script.includes('#!/usr/bin/env python')) || (t.script_type !== 'python' && t.script.includes('#!/bin/bash')))" 
+                    class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                    <i class="fas fa-check-circle mr-1"></i>Valid
+                </span>
+                <span v-else class="text-xs px-2 py-0.5 rounded-full"
+                    :class="t.script_type === 'python' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'">
+                    <i :class="t.script_type === 'python' ? 'fab fa-python' : 'fas fa-terminal'" class="mr-1"></i>
+                    [[ t.script_type === 'python' ? 'Python' : 'Bash' ]]
+                </span>
+            </div>
+            
+            <!-- Actions Footer -->
+            <div class="px-4 py-3 flex justify-between items-center">
+                <button @click="editTemplate(t)" class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button @click="deleteTemplate(t.id)" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty States -->
+        <div v-if="templates.length === 0" class="col-span-full">
+            <div class="bg-white rounded-xl border-2 border-dashed border-gray-300 p-16 text-center">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-file-code text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">No Templates Yet</h3>
+                <p class="text-gray-500 mb-6">Create your first script template (Bash or Python) to get started</p>
+                <button @click="startNewTemplate" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium inline-flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Create Your First Template
+                </button>
+            </div>
+        </div>
+        <div v-else-if="filteredTemplates.length === 0" class="col-span-full">
+            <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-search text-gray-400 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">No Results Found</h3>
+                <p class="text-gray-500">No templates match "<span class="font-medium">[[ templateSearchQuery ]]</span>"</p>
+            </div>
+        </div>
+    </div>
+</div>

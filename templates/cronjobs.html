@@ -1,0 +1,358 @@
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Cron Jobs</h1>
+            <p class="text-gray-500 mt-1">Schedule automated script executions</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" v-model="cronJobSearchQuery" placeholder="Search cron jobs..." 
+                    class="pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none transition">
+            </div>
+            <button @click="startNewCronJob" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition font-medium flex items-center gap-2 shadow-md">
+                <i class="fas fa-plus"></i> New Cron Job
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-indigo-600"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-800">[[ cronjobs.length ]]</p>
+                <p class="text-xs text-gray-500">Total Jobs</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-play text-green-600"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-green-600">[[ cronjobs.filter(j => j.enabled).length ]]</p>
+                <p class="text-xs text-gray-500">Active</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-pause text-gray-500"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-500">[[ cronjobs.filter(j => !j.enabled).length ]]</p>
+                <p class="text-xs text-gray-500">Disabled</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 flex items-center gap-3">
+            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-server text-purple-600"></i>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-800">[[ cronjobs.reduce((sum, j) => sum + j.host_ids.length, 0) ]]</p>
+                <p class="text-xs text-gray-500">Total Targets</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cron Editor Modal -->
+    <div v-if="editingCronJob" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="cancelCronJobEdit">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 bg-gradient-to-r from-indigo-600 to-purple-700 flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i :class="cronJobForm.id ? 'fas fa-edit' : 'fas fa-plus'" class="text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">[[ cronJobForm.id ? 'Edit Cron Job' : 'New Cron Job' ]]</h3>
+                        <p class="text-white/70 text-sm">Configure scheduled script execution</p>
+                    </div>
+                </div>
+                <button @click="cancelCronJobEdit" class="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-5">
+                <!-- Name & Schedule Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-tag mr-1 text-gray-400"></i> Job Name
+                        </label>
+                        <input v-model="cronJobForm.name" placeholder="e.g., Daily Backup" 
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-clock mr-1 text-gray-400"></i> Schedule (Cron Expression)
+                        </label>
+                        <input v-model="cronJobForm.schedule" placeholder="*/15 * * * *" 
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition font-mono">
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i> min hour day month weekday
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Template & Key Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-file-code mr-1 text-gray-400"></i> Template
+                        </label>
+                        <select v-model="cronJobForm.template_id" 
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                            <option value="" disabled>Select a template...</option>
+                            <option v-for="t in templates" :value="t.id">[[ t.name ]]</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-key mr-1 text-gray-400"></i> SSH Key
+                        </label>
+                        <select v-model="cronJobForm.key_id" 
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                            <option value="" disabled>Select a key...</option>
+                            <option v-for="k in keys" :value="k.id">[[ k.name ]]</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Target Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <i class="fas fa-crosshairs mr-1 text-gray-400"></i> Target Selection
+                    </label>
+                    
+                    <!-- Selection Type Tabs -->
+                    <div class="flex gap-2 mb-4">
+                        <button type="button" 
+                            @click="cronJobForm.selection_type = 'groups'"
+                            :class="[
+                                'flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2',
+                                cronJobForm.selection_type === 'groups' 
+                                    ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ]">
+                            <i class="fas fa-layer-group"></i> Host Groups
+                        </button>
+                        <button type="button"
+                            @click="cronJobForm.selection_type = 'hosts'"
+                            :class="[
+                                'flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2',
+                                cronJobForm.selection_type === 'hosts' 
+                                    ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ]">
+                            <i class="fas fa-server"></i> Individual Hosts
+                        </button>
+                    </div>
+
+                    <!-- Groups Selection -->
+                    <div v-if="cronJobForm.selection_type === 'groups'" class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="p-3 bg-gray-100 border-b flex items-center justify-between">
+                            <label class="inline-flex items-center cursor-pointer text-sm">
+                                <input type="checkbox" id="cronSelectAllGroups" :checked="cronJobForm.group_ids.length === groups.length && groups.length > 0" @change="toggleSelectAllCronJobGroups($event)" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-2">
+                                <span class="font-medium text-gray-700">Select All</span>
+                            </label>
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" v-model="cronGroupSearchQuery" placeholder="Search groups..." class="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg w-44 focus:ring-2 focus:ring-indigo-400 outline-none">
+                            </div>
+                        </div>
+                        <div class="p-3 max-h-40 overflow-y-auto">
+                            <div v-for="g in filteredCronGroups" :key="g.id" class="flex items-center p-2 hover:bg-white rounded-lg transition">
+                                <input type="checkbox" :value="g.id" v-model="cronJobForm.group_ids" :id="'cg-'+g.id" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-3">
+                                <label :for="'cg-'+g.id" class="flex-1 cursor-pointer">
+                                    <span class="text-sm font-medium text-gray-800">[[ g.name ]]</span>
+                                    <span class="text-xs text-gray-500 ml-2">([[ g.host_ids.length ]] hosts)</span>
+                                </label>
+                            </div>
+                            <div v-if="filteredCronGroups.length === 0" class="text-center py-6">
+                                <i class="fas fa-inbox text-gray-300 text-2xl mb-2"></i>
+                                <p class="text-gray-400 text-sm">No groups found</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hosts Selection -->
+                    <div v-else class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="p-3 bg-gray-100 border-b flex items-center justify-between">
+                            <label class="inline-flex items-center cursor-pointer text-sm">
+                                <input type="checkbox" id="cronSelectAllHosts" :checked="cronJobForm.host_ids.length === hosts.length && hosts.length > 0" @change="toggleSelectAllCronJobHosts($event)" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-2">
+                                <span class="font-medium text-gray-700">Select All</span>
+                            </label>
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" v-model="cronHostSearchQuery" placeholder="Search hosts..." class="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg w-44 focus:ring-2 focus:ring-indigo-400 outline-none">
+                            </div>
+                        </div>
+                        <div class="p-3 max-h-40 overflow-y-auto">
+                            <div v-for="h in filteredCronHosts" :key="h.id" class="flex items-center p-2 hover:bg-white rounded-lg transition">
+                                <input type="checkbox" :value="h.id" v-model="cronJobForm.host_ids" :id="'ch-'+h.id" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 mr-3">
+                                <label :for="'ch-'+h.id" class="flex-1 cursor-pointer">
+                                    <span class="text-sm font-medium text-gray-800">[[ h.name ]]</span>
+                                    <span class="text-xs text-gray-500 ml-2 font-mono">([[ h.hostname ]])</span>
+                                </label>
+                            </div>
+                            <div v-if="filteredCronHosts.length === 0" class="text-center py-6">
+                                <i class="fas fa-inbox text-gray-300 text-2xl mb-2"></i>
+                                <p class="text-gray-400 text-sm">No hosts found</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Count -->
+                    <div class="mt-3 flex items-center justify-between">
+                        <span class="text-sm text-gray-600">
+                            <i class="fas fa-check-circle text-indigo-500 mr-1"></i>
+                            <span class="font-medium">[[ cronJobSelectedHostCount ]]</span> host(s) selected
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Enabled Toggle -->
+                <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="cronJobEnabled" v-model="cronJobForm.enabled" class="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500 focus:ring-2 cursor-pointer">
+                    </label>
+                    <div class="flex-1">
+                        <label for="cronJobEnabled" class="text-sm font-medium text-gray-800 cursor-pointer">Enable Job</label>
+                        <p class="text-xs text-gray-500">Job will run on schedule when enabled</p>
+                    </div>
+                    <span :class="[
+                        'px-3 py-1 rounded-full text-xs font-semibold',
+                        cronJobForm.enabled ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'
+                    ]">
+                        [[ cronJobForm.enabled ? 'Enabled' : 'Disabled' ]]
+                    </span>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-gray-50 border-t flex justify-end gap-3">
+                <button @click="cancelCronJobEdit" class="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
+                    Cancel
+                </button>
+                <button @click="saveCronJob" class="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition font-medium flex items-center gap-2 shadow-md">
+                    <i class="fas fa-save"></i> Save Cron Job
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cron Jobs Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div v-for="job in filteredCronJobs" :key="job.id" 
+            class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden">
+            <!-- Header with Status -->
+            <div class="p-4 flex justify-between items-start" :class="job.enabled ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-clock text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-white truncate max-w-[180px]" :title="job.name">[[ job.name ]]</h4>
+                        <span class="text-xs text-white/70">ID: [[ job.id ]]</span>
+                    </div>
+                </div>
+                <span :class="[
+                    'px-2.5 py-1 rounded-full text-xs font-bold uppercase',
+                    job.enabled ? 'bg-white/20 text-white' : 'bg-white/30 text-white'
+                ]">
+                    [[ job.enabled ? 'Active' : 'Paused' ]]
+                </span>
+            </div>
+            
+            <!-- Schedule Badge -->
+            <div class="px-4 py-3 bg-slate-900 flex items-center justify-between">
+                <code class="text-green-400 text-sm font-mono">[[ job.schedule ]]</code>
+                <span class="text-xs text-slate-500">cron</span>
+            </div>
+            
+            <!-- Details -->
+            <div class="p-4 space-y-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-file-code text-blue-600 text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-gray-500">Template</p>
+                        <p class="text-sm font-medium text-gray-800 truncate" :title="getTemplateNameById(job.template_id)">[[ getTemplateNameById(job.template_id) ]]</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-key text-yellow-600 text-sm"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-xs text-gray-500">SSH Key</p>
+                        <p class="text-sm font-medium text-gray-800 truncate" :title="getKeyNameById(job.key_id)">[[ getKeyNameById(job.key_id) ]]</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-server text-purple-600 text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-500">Targets</p>
+                        <p class="text-sm font-medium text-gray-800">[[ job.host_ids.length ]] host(s)</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Timing Info -->
+            <div class="px-4 py-3 bg-gray-50 border-t border-gray-100 space-y-2">
+                <div v-if="job.last_run" class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-history w-5 text-gray-400"></i>
+                    <span>Last: [[ new Date(job.last_run).toLocaleString() ]]</span>
+                </div>
+                <div v-if="job.next_run" class="flex items-center text-xs" :class="job.enabled ? 'text-green-600 font-medium' : 'text-gray-400'">
+                    <i class="fas fa-forward w-5"></i>
+                    <span>Next: [[ new Date(job.next_run).toLocaleString() ]]</span>
+                </div>
+                <div v-if="!job.last_run && !job.next_run" class="text-xs text-gray-400 italic">
+                    <i class="fas fa-info-circle mr-1"></i> No run history yet
+                </div>
+            </div>
+            
+            <!-- Actions Footer -->
+            <div class="px-4 py-3 border-t border-gray-100 flex justify-between items-center">
+                <button @click="editCronJob(job)" class="px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button @click="deleteCronJob(job.id)" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty States -->
+        <div v-if="cronjobs.length === 0" class="col-span-full">
+            <div class="bg-white rounded-xl border-2 border-dashed border-gray-300 p-16 text-center">
+                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-clock text-gray-400 text-3xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">No Cron Jobs Yet</h3>
+                <p class="text-gray-500 mb-6">Create your first scheduled job to automate script execution</p>
+                <button @click="startNewCronJob" class="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium inline-flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Create Your First Cron Job
+                </button>
+            </div>
+        </div>
+        <div v-else-if="filteredCronJobs.length === 0" class="col-span-full">
+            <div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-search text-gray-400 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">No Results Found</h3>
+                <p class="text-gray-500">No cron jobs match "<span class="font-medium">[[ cronJobSearchQuery ]]</span>"</p>
+            </div>
+        </div>
+    </div>
+</div> 

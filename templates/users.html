@@ -1,0 +1,199 @@
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">User Management</h1>
+            <p class="text-gray-500 mt-1">Manage users and their access permissions</p>
+        </div>
+        <button @click="openUserModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+            <i class="fas fa-user-plus mr-2"></i> Add User
+        </button>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="mb-6">
+        <div class="relative">
+            <input 
+                type="text" 
+                v-model="userSearch" 
+                placeholder="Search users..."
+                class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+            >
+            <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+    </div>
+
+    <!-- Users Grid -->
+    <div v-if="filteredUsers.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-for="user in filteredUsers" :key="user.id" 
+            class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+            
+            <!-- User Card Header -->
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div :class="[
+                        'w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg',
+                        user.is_admin ? 'bg-gradient-to-br from-yellow-400 to-orange-500' : 'bg-gradient-to-br from-blue-400 to-blue-600'
+                    ]">
+                        [[ user.username.charAt(0).toUpperCase() ]]
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-semibold text-gray-800 truncate">[[ user.username ]]</h3>
+                            <span v-if="user.is_admin" class="px-2 py-0.5 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                                <i class="fas fa-crown mr-1"></i>Admin
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-500 truncate">[[ user.email || 'No email' ]]</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Card Body -->
+            <div class="p-4 bg-gray-50">
+                <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
+                    <span><i class="fas fa-calendar-alt mr-1"></i> Created</span>
+                    <span>[[ formatDate(user.created_at) ]]</span>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex gap-2">
+                    <button @click="openUserModal(user)" 
+                        class="flex-1 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition">
+                        <i class="fas fa-edit mr-1"></i> Edit
+                    </button>
+                    <button @click="confirmDeleteUser(user)" 
+                        :disabled="user.is_current"
+                        :class="[
+                            'flex-1 px-3 py-2 text-sm rounded-lg transition',
+                            user.is_current ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        ]">
+                        <i class="fas fa-trash mr-1"></i> Delete
+                    </button>
+                </div>
+                <p v-if="user.is_current" class="text-xs text-gray-400 mt-2 text-center">
+                    <i class="fas fa-info-circle mr-1"></i> This is your account
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="text-center py-12 bg-white rounded-xl border border-gray-200">
+        <i class="fas fa-users text-4xl text-gray-300 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-600">No users found</h3>
+        <p class="text-gray-400 mt-1" v-if="userSearch">Try adjusting your search</p>
+        <p class="text-gray-400 mt-1" v-else>Add your first user to get started</p>
+    </div>
+
+    <!-- User Modal -->
+    <div v-if="showUserModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md" @click.stop>
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        [[ editingUser ? 'Edit User' : 'Add New User' ]]
+                    </h2>
+                    <button @click="closeUserModal" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form @submit.prevent="saveUser" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                    <input 
+                        v-model="userForm.username" 
+                        type="text" 
+                        required
+                        :disabled="editingUser"
+                        :class="[
+                            'w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none',
+                            editingUser ? 'bg-gray-100 cursor-not-allowed' : ''
+                        ]"
+                        placeholder="Enter username"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input 
+                        v-model="userForm.email" 
+                        type="email" 
+                        class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        placeholder="Enter email (optional)"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Password [[ editingUser ? '(leave blank to keep current)' : '*' ]]
+                    </label>
+                    <div class="relative">
+                        <input 
+                            v-model="userForm.password" 
+                            :type="showModalPassword ? 'text' : 'password'" 
+                            :required="!editingUser"
+                            class="w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            placeholder="Enter password"
+                        >
+                        <button type="button" @click="showModalPassword = !showModalPassword" 
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <i :class="showModalPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <input 
+                        v-model="userForm.is_admin" 
+                        type="checkbox" 
+                        id="isAdmin"
+                        class="w-4 h-4 text-yellow-600 rounded focus:ring-yellow-500"
+                    >
+                    <label for="isAdmin" class="text-sm text-yellow-800">
+                        <i class="fas fa-crown mr-1"></i> Administrator privileges
+                    </label>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" @click="closeUserModal" 
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" :disabled="userFormLoading"
+                        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition disabled:opacity-50">
+                        <i v-if="userFormLoading" class="fas fa-spinner fa-spin mr-2"></i>
+                        [[ editingUser ? 'Update' : 'Create' ]] User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm" @click.stop>
+            <div class="p-6 text-center">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-user-times text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">Delete User?</h3>
+                <p class="text-gray-500 mb-6">
+                    Are you sure you want to delete <strong>[[ userToDelete?.username ]]</strong>? This action cannot be undone.
+                </p>
+                <div class="flex gap-3">
+                    <button @click="showDeleteModal = false" 
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button @click="deleteUser" 
+                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                        <i class="fas fa-trash mr-2"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

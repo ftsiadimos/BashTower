@@ -1,0 +1,234 @@
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Host Groups</h1>
+            <p class="text-gray-500 mt-1">Organize hosts into logical groups for batch operations</p>
+        </div>
+        <button @click="startNewGroup" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+            <i class="fas fa-plus mr-2"></i> New Group
+        </button>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-layer-group text-indigo-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ groups.length ]]</p>
+                    <p class="text-xs text-gray-500">Total Groups</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-server text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ hosts.length ]]</p>
+                    <p class="text-xs text-gray-500">Available Hosts</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-link text-green-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ groups.reduce((sum, g) => sum + g.host_ids.length, 0) ]]</p>
+                    <p class="text-xs text-gray-500">Total Assignments</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-calculator text-amber-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ groups.length > 0 ? Math.round(groups.reduce((sum, g) => sum + g.host_ids.length, 0) / groups.length) : 0 ]]</p>
+                    <p class="text-xs text-gray-500">Avg Hosts/Group</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="mb-6">
+        <div class="relative">
+            <input 
+                type="text" 
+                v-model="groupPageSearchQuery" 
+                placeholder="Search groups..."
+                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
+            >
+            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <span v-if="groupPageSearchQuery" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-gray-400">
+                [[ filteredGroupsPage.length ]] of [[ groups.length ]]
+            </span>
+        </div>
+    </div>
+
+    <!-- Groups Grid -->
+    <div v-if="filteredGroupsPage.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-for="g in filteredGroupsPage" :key="g.id" 
+            class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
+            
+            <!-- Card Header -->
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-layer-group text-white"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="font-semibold text-gray-800 truncate">[[ g.name ]]</h3>
+                            <p class="text-sm text-gray-500">
+                                <i class="fas fa-server mr-1"></i>[[ g.host_ids.length ]] host[[ g.host_ids.length !== 1 ? 's' : '' ]]
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button @click="editGroup(g)" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button @click="deleteGroup(g.id)" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Body - Member Hosts -->
+            <div class="p-4 bg-gray-50">
+                <p class="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Member Hosts</p>
+                <div v-if="g.host_ids.length > 0" class="flex flex-wrap gap-1.5">
+                    <span v-for="(hostId, index) in g.host_ids.slice(0, 5)" :key="hostId" 
+                        class="px-2 py-1 bg-white border border-gray-200 text-gray-700 rounded-md text-xs font-medium shadow-sm">
+                        <i class="fas fa-server mr-1 text-gray-400"></i>[[ getHostName(hostId) ]]
+                    </span>
+                    <span v-if="g.host_ids.length > 5" 
+                        class="px-2 py-1 bg-gray-200 text-gray-600 rounded-md text-xs font-medium">
+                        +[[ g.host_ids.length - 5 ]] more
+                    </span>
+                </div>
+                <div v-else class="text-sm text-gray-400 italic py-2">
+                    <i class="fas fa-info-circle mr-1"></i>No hosts assigned
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="text-center py-16 bg-white rounded-xl border border-gray-200">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-layer-group text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-600" v-if="groups.length === 0">No groups yet</h3>
+        <h3 class="text-lg font-medium text-gray-600" v-else>No groups match your search</h3>
+        <p class="text-gray-400 mt-1" v-if="groups.length === 0">Create groups to organize your hosts</p>
+        <p class="text-gray-400 mt-1" v-else>Try adjusting your search terms</p>
+        <button v-if="groups.length === 0" @click="startNewGroup" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-plus mr-2"></i> Create Group
+        </button>
+    </div>
+
+    <!-- Add/Edit Group Modal -->
+    <div v-if="editingGroup" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" @click.stop>
+            <div class="p-6 border-b border-gray-200 flex-shrink-0">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-layer-group mr-2 text-indigo-600"></i>
+                        [[ groupForm.id ? 'Edit Group' : 'Create New Group' ]]
+                    </h2>
+                    <button @click="cancelGroupEdit" class="text-gray-400 hover:text-gray-600 transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6 space-y-4 overflow-y-auto flex-1">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-tag mr-1 text-gray-400"></i> Group Name *
+                    </label>
+                    <input 
+                        v-model="groupForm.name" 
+                        type="text" 
+                        required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        placeholder="e.g., Production Web Servers"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        <i class="fas fa-server mr-1 text-gray-400"></i> Member Hosts
+                    </label>
+                    
+                    <!-- Select All -->
+                    <div class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg mb-2">
+                        <input 
+                            type="checkbox" 
+                            id="selectAllGroupHosts"
+                            :checked="groupForm.host_ids.length === hosts.length && hosts.length > 0"
+                            @change="toggleSelectAllGroupHosts($event)"
+                            class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        >
+                        <label for="selectAllGroupHosts" class="text-sm font-medium text-gray-700 select-none">
+                            Select All Hosts
+                        </label>
+                        <span class="ml-auto text-sm text-gray-500">
+                            [[ groupForm.host_ids.length ]] / [[ hosts.length ]] selected
+                        </span>
+                    </div>
+                    
+                    <!-- Hosts List -->
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <div class="max-h-48 overflow-y-auto">
+                            <div v-for="h in hosts" :key="h.id" 
+                                class="flex items-center gap-3 p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 cursor-pointer"
+                                @click="toggleHostInGroup(h.id)">
+                                <input 
+                                    type="checkbox" 
+                                    :value="h.id" 
+                                    v-model="groupForm.host_ids"
+                                    class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                                    @click.stop
+                                >
+                                <div class="w-8 h-8 bg-slate-100 rounded flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-server text-slate-500 text-sm"></i>
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="font-medium text-gray-800 truncate">[[ h.name ]]</p>
+                                    <p class="text-xs text-gray-500 font-mono truncate">[[ h.hostname ]]</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="hosts.length === 0" class="p-6 text-center text-gray-400">
+                            <i class="fas fa-server text-2xl mb-2"></i>
+                            <p class="text-sm">No hosts available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-200 bg-gray-50 flex gap-3 flex-shrink-0">
+                <button @click="cancelGroupEdit" 
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+                    Cancel
+                </button>
+                <button @click="saveGroup"
+                    class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-save mr-2"></i>[[ groupForm.id ? 'Update' : 'Create' ]] Group
+                </button>
+            </div>
+        </div>
+    </div>
+</div>             

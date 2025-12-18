@@ -1,0 +1,195 @@
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">SSH Keys</h1>
+            <p class="text-gray-500 mt-1">Manage private keys for secure authentication</p>
+        </div>
+        <button @click="showKeyModal = true" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+            <i class="fas fa-plus mr-2"></i> Add Key
+        </button>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-key text-yellow-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ keys.length ]]</p>
+                    <p class="text-xs text-gray-500">Total Keys</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-shield-alt text-green-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">AES-256</p>
+                    <p class="text-xs text-gray-500">Encryption</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-lock text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">Secure</p>
+                    <p class="text-xs text-gray-500">Storage Status</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="mb-6" v-if="keys.length > 0">
+        <div class="relative">
+            <input 
+                type="text" 
+                v-model="keySearchQuery" 
+                placeholder="Search keys..."
+                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
+            >
+            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <span v-if="keySearchQuery" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-gray-400">
+                [[ filteredKeys.length ]] of [[ keys.length ]]
+            </span>
+        </div>
+    </div>
+
+    <!-- Keys Grid -->
+    <div v-if="filteredKeys.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-for="k in filteredKeys" :key="k.id" 
+            class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
+            
+            <!-- Card Header -->
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-key text-white"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="font-semibold text-gray-800 truncate">[[ k.name ]]</h3>
+                            <p class="text-xs text-gray-500">
+                                <i class="fas fa-fingerprint mr-1"></i>SSH Private Key
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button @click="deleteKey(k.id)" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-4 bg-gray-50">
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="flex items-center gap-1.5 px-2 py-1 bg-green-100 text-green-700 rounded-md">
+                        <i class="fas fa-lock text-xs"></i>
+                        <span class="text-xs font-medium">Encrypted</span>
+                    </span>
+                    <span class="flex items-center gap-1.5 px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
+                        <i class="fas fa-check text-xs"></i>
+                        <span class="text-xs font-medium">Ready</span>
+                    </span>
+                </div>
+                <p class="text-xs text-gray-400 mt-3">
+                    <i class="fas fa-info-circle mr-1"></i>Key content is securely encrypted at rest
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="text-center py-16 bg-white rounded-xl border border-gray-200">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-key text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-600" v-if="keys.length === 0">No SSH keys yet</h3>
+        <h3 class="text-lg font-medium text-gray-600" v-else>No keys match your search</h3>
+        <p class="text-gray-400 mt-1" v-if="keys.length === 0">Add your first SSH key to enable secure connections</p>
+        <p class="text-gray-400 mt-1" v-else>Try adjusting your search terms</p>
+        <button v-if="keys.length === 0" @click="showKeyModal = true" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-plus mr-2"></i> Add SSH Key
+        </button>
+    </div>
+
+    <!-- Add Key Modal -->
+    <div v-if="showKeyModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg" @click.stop>
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-key mr-2 text-yellow-500"></i>
+                        Add SSH Key
+                    </h2>
+                    <button @click="closeKeyModal" class="text-gray-400 hover:text-gray-600 transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form @submit.prevent="saveKey" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-tag mr-1 text-gray-400"></i> Key Name *
+                    </label>
+                    <input 
+                        v-model="keyForm.name" 
+                        type="text" 
+                        required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        placeholder="e.g., Production Server Key"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-file-code mr-1 text-gray-400"></i> Private Key *
+                    </label>
+                    <textarea 
+                        v-model="keyForm.private_key" 
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-mono text-xs h-40 bg-slate-900 text-green-400"
+                        placeholder="-----BEGIN RSA PRIVATE KEY-----
+...
+-----END RSA PRIVATE KEY-----"
+                    ></textarea>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Supports RSA, Ed25519, and ECDSA key formats
+                    </p>
+                </div>
+
+                <div class="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="flex items-center gap-2 text-green-700">
+                        <i class="fas fa-shield-alt"></i>
+                        <span class="text-sm font-medium">Secure Storage</span>
+                    </div>
+                    <p class="text-xs text-green-600 mt-1">
+                        Your private key will be encrypted with AES-256 before being stored in the database.
+                    </p>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" @click="closeKeyModal" 
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-save mr-2"></i>Save Key
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -4,536 +4,135 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bash Tower</title>
-    <link rel="icon" href="/static/img/BashTower.png">
+    <link rel="icon" href="{{ url_for('static', filename='img/BashTower.png') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Prevents the template from showing before Vue is ready */
+        [v-cloak] { display: none; }
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800 h-screen overflow-hidden">
     
-    <div id="app" class="flex h-full">
+    <div id="app" class="flex h-full" v-cloak>
+        <!-- Sidebar Navigation -->
         <div class="w-64 bg-slate-800 text-white flex flex-col">
             <div class="p-4 text-2xl font-bold border-b border-slate-700">
                 <i class="fas fa-tower-broadcast mr-2"></i>Bash Tower
             </div>
-            <nav class="flex-1 p-4 space-y-2">
-                <button @click="currentView = 'dashboard'" :class="{'bg-blue-600': currentView === 'dashboard'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-tachometer-alt w-6"></i> Dashboard
+            <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+                <!-- Navigation Buttons -->
+                <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-tachometer-alt w-6"></i> <span>Dashboard</span>
                 </button>
-                <button @click="currentView = 'templates'" :class="{'bg-blue-600': currentView === 'templates'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-file-code w-6"></i> Templates
+                <button @click="currentView = 'templates'" :class="currentView === 'templates' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-file-code w-6"></i> <span>Templates</span>
                 </button>
-                 <button @click="currentView = 'cronjobs'" :class="{'bg-blue-600': currentView === 'cronjobs'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-clock w-6"></i> Cron Jobs
+                <button @click="currentView = 'cronjobs'" :class="currentView === 'cronjobs' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-clock w-6"></i> <span>Cron Jobs</span>
                 </button>
-                <button @click="currentView = 'cronHistory'" :class="{'bg-blue-600': currentView === 'cronHistory'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-history w-6"></i> Cron History
+                <button @click="currentView = 'cronHistory'" :class="currentView === 'cronHistory' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-history w-6"></i> <span>Cron History</span>
                 </button>
-                <button @click="currentView = 'hosts'" :class="{'bg-blue-600': currentView === 'hosts'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-server w-6"></i> Hosts
+                <button @click="currentView = 'hosts'" :class="currentView === 'hosts' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-server w-6"></i> <span>Hosts</span>
                 </button>
-                <button @click="currentView = 'groups'" :class="{'bg-blue-600': currentView === 'groups'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-layer-group w-6"></i> Host Groups
+                <button @click="currentView = 'groups'" :class="currentView === 'groups' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-layer-group w-6"></i> <span>Host Groups</span>
                 </button>
-                <button @click="currentView = 'keys'" :class="{'bg-blue-600': currentView === 'keys'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-key w-6"></i> SSH Keys
+                <button @click="currentView = 'keys'" :class="currentView === 'keys' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-key w-6"></i> <span>SSH Keys</span>
                 </button>
-                <button @click="currentView = 'satellite'" :class="{'bg-blue-600': currentView === 'satellite'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-satellite-dish w-6"></i> Satellite Sync
+                <button @click="currentView = 'satellite'" :class="currentView === 'satellite' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-satellite-dish w-6"></i> <span>Satellite Sync</span>
                 </button>
-
-                <button @click="currentView = 'about'" :class="{'bg-blue-600': currentView === 'about'}" class="w-full text-left p-2 rounded hover:bg-slate-700 transition">
-                    <i class="fas fa-info-circle w-6"></i> About
+                <button @click="currentView = 'settings'" :class="currentView === 'settings' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-cog w-6"></i> <span>Settings</span>
+                </button>
+                <button v-if="currentUser && currentUser.is_admin" @click="currentView = 'users'" :class="currentView === 'users' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-users-cog w-6"></i> <span>Users</span>
+                </button>
+                <button @click="currentView = 'about'" :class="currentView === 'about' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
+                    <i class="fas fa-info-circle w-6"></i> <span>About</span>
                 </button>
             </nav>
         </div>
 
-
+        <!-- Content Area -->
         <div class="flex-1 flex flex-col overflow-hidden">
-            <header class="bg-white shadow p-4">
-                <h2 class="text-xl font-semibold capitalize">[[ currentView ]]</h2>
+            <header class="bg-white shadow p-4 flex justify-between items-center">
+                <h2 class="text-xl font-semibold capitalize">[[ currentView === 'cronHistory' ? 'Cron History' : currentView ]]</h2>
+                <div class="flex items-center gap-4">
+                    <div v-if="currentUser" class="flex items-center gap-2 text-gray-600">
+                        <i class="fas fa-user-circle text-lg"></i>
+                        <span class="text-sm font-medium">[[ currentUser.username ]]</span>
+                        <span v-if="currentUser.is_admin" class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                            <i class="fas fa-crown mr-1"></i>Admin
+                        </span>
+                    </div>
+                    <button @click="logout" class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition flex items-center gap-1">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
             </header>
 
             <main class="flex-1 overflow-auto p-6">
-                
+                <!-- Using v-if ensures that content is only rendered when active -->
                 <div v-if="currentView === 'dashboard'">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-white p-6 rounded shadow">
-                            <h3 class="text-lg font-bold mb-4">Run Template</h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Select Template</label>
-                                    <select v-model="runForm.template_id" class="mt-1 block w-full border border-gray-300 rounded p-2">
-                                        <option v-for="t in templates" :value="t.id">[[ t.name ]]</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Select SSH Key</label>
-                                    <select v-model="runForm.key_id" class="mt-1 block w-full border border-gray-300 rounded p-2">
-                                        <option v-for="k in keys" :value="k.id">[[ k.name ]]</option>
-                                    </select>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Target Selection</label>
-                                    
-                                    <div class="flex space-x-4 mb-3">
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" v-model="runForm.selection_type" value="groups" class="form-radio text-blue-600">
-                                            <span class="ml-2">Host Groups</span>
-                                        </label>
-                                        <label class="inline-flex items-center">
-                                            <input type="radio" v-model="runForm.selection_type" value="hosts" class="form-radio text-blue-600">
-                                            <span class="ml-2">Individual Hosts</span>
-                                        </label>
-                                    </div>
-
-                                    <div v-if="runForm.selection_type === 'groups'">
-                                        <label class="block text-sm font-medium text-gray-700">Select Host Groups</label>
-                                        <div class="flex items-center mb-2">
-                                            <input type="checkbox" id="selectAllGroups"
-                                                :checked="runForm.group_ids.length === groups.length"
-                                                @change="toggleSelectAllGroups($event)"
-                                                class="mr-2">
-                                            <label for="selectAllGroups" class="select-none">Select All Groups</label>
-                                        </div>
-                                        <div class="mt-2 h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50">
-                                            <div v-for="g in groups" :key="g.id" class="flex items-center">
-                                                <input type="checkbox" :value="g.id" v-model="runForm.group_ids" class="mr-2">
-                                                <span>[[ g.name ]] ([[ g.host_ids.length ]] Hosts)</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div v-else-if="runForm.selection_type === 'hosts'">
-                                        <label class="block text-sm font-medium text-gray-700">Select Individual Hosts</label>
-                                        <div class="flex items-center mb-2">
-                                            <input type="checkbox" id="selectAllHosts"
-                                                :checked="runForm.host_ids.length === hosts.length"
-                                                @change="toggleSelectAllHosts($event)"
-                                                class="mr-2">
-                                            <label for="selectAllHosts" class="select-none">Select All Hosts</label>
-                                        </div>
-                                        <div class="mt-2 h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50">
-                                            <div v-for="h in hosts" :key="h.id" class="flex items-center">
-                                                <input type="checkbox" :value="h.id" v-model="runForm.host_ids" class="mr-2">
-                                                <span>[[ h.name ]] ([[ h.hostname ]])</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <p class="text-sm text-gray-600 mt-2">
-                                        **[[ selectedHostCount ]] Hosts** selected for execution.
-                                    </p>
-                                </div>
-                                <button @click="runJob" :disabled="isRunning" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700 disabled:opacity-50">
-                                    [[ isRunning ? 'Running...' : 'Launch' ]]
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded shadow">
-                            <h3 class="text-lg font-bold mb-4">Job History</h3>
-                            <ul class="divide-y divide-gray-200 h-80 overflow-y-auto">
-                                <li v-for="job in jobHistory" :key="job.id" @click="viewJob(job.id)" class="p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center">
-                                    <div>
-                                        <span class="font-medium">#[[ job.id ]] [[ job.template_name ]]</span>
-                                        <div class="text-xs text-gray-500">[[ new Date(job.created_at).toLocaleString() ]]</div>
-                                    </div>
-                                    <span :class="statusClass(job.status)" class="px-2 py-1 rounded text-xs font-bold uppercase">[[ job.status ]]</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-
-                    <div v-if="activeJob" class="mt-6 bg-white p-6 rounded shadow">
-                        <div class="flex justify-between mb-4">
-                            <h3 class="text-lg font-bold">Output: [[ activeJob.template_name ]] (Job #[[ activeJob.id ]])</h3>
-                            <button @click="activeJob = null" class="text-gray-500 hover:text-gray-700">Close</button>
-                        </div>
-                        <div v-if="activeJob.status === 'running'" class="animate-pulse text-blue-500 mb-2">Job is running... polling results.</div>
-                        
-                        <div v-for="log in activeJob.logs" class="mb-4 border rounded">
-                            <div class="bg-gray-100 p-2 border-b font-mono text-sm font-bold flex justify-between items-center">
-                                <div>
-                                    <span>[[ getHostFriendlyName(log.hostname) ]]</span>
-                                    <span :class="log.status === 'success' ? 'text-green-600' : 'text-red-600'" class="ml-2">[[ log.status ]]</span>
-                                </div>
-                                <button v-if="log.status !== 'success'" @click="analyzeError(log, activeJob.template_name)" class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 border border-purple-300">
-                                    <i class="fas fa-magic mr-1"></i> Troubleshoot ✨
-                                </button>
-                            </div>
-                            <div class="p-2 bg-slate-900 text-green-400 font-mono text-xs overflow-x-auto relative">
-                                <pre v-if="log.stdout">[[ log.stdout ]]</pre>
-                                <pre v-if="log.stderr" class="text-red-400">[[ log.stderr ]]</pre>
-                                <div v-if="!log.stdout && !log.stderr" class="text-gray-500 italic">No output</div>
-                                
-                                <div v-if="log.aiAnalysis" class="mt-2 p-3 bg-slate-800 border-l-4 border-purple-500 text-gray-300 whitespace-pre-wrap font-sans">
-                                    <div class="flex justify-between mb-1">
-                                        <strong class="text-purple-400"><i class="fas fa-robot mr-1"></i> Gemini Analysis</strong>
-                                        <button @click="log.aiAnalysis = null" class="text-gray-500 hover:text-white">x</button>
-                                    </div>
-                                    <div v-html="renderMarkdown(log.aiAnalysis)"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    {% include 'dashboard.html' %}
                 </div>
-
                 <div v-if="currentView === 'templates'">
-                    <div class="flex justify-between mb-4">
-                        <h2 class="text-lg font-bold">Manage Templates</h2>
-                        <button @click="startNewTemplate" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                            <i class="fas fa-plus mr-1"></i> New Template
-                        </button>
-                    </div>
-
-                    <div v-if="editingTemplate" class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-500">
-                        <h3 class="text-lg font-bold mb-4">[[ templateForm.id ? 'Edit Template: ' + templateForm.name : 'Create New Template' ]]</h3>
-                        <div class="space-y-4">
-                            <input v-model="templateForm.name" placeholder="Template Name (e.g., Deploy Webserver)" class="border p-2 rounded w-full">
-                            <textarea v-model="templateForm.script" placeholder="#!/bin/bash&#10;echo 'Script content here...'" class="border p-2 rounded w-full font-mono text-xs h-64"></textarea>
-                            <div class="flex space-x-2">
-                                <button @click="saveTemplate" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                                    <i class="fas fa-save mr-1"></i> Save Template
-                                </button>
-                                <button @click="cancelEdit" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-4">
-                        <div v-for="t in templates" :key="t.id" class="bg-white p-4 rounded shadow flex justify-between items-center">
-                            <div>
-                                <div class="font-bold">[[ t.name ]]</div>
-                                <div class="text-xs text-gray-500 font-mono mt-1">ID: [[ t.id ]]</div>
-                            </div>
-                            <div class="space-x-2">
-                                <button @click="editTemplate(t)" class="text-blue-600 hover:text-blue-800">Edit</button>
-                                <button @click="deleteTemplate(t.id)" class="text-red-600 hover:text-red-800">Delete</button>
-                            </div>
-                        </div>
-                    </div>
+                    {% include 'templates.html' %}
                 </div>
-
-                <div v-if="currentView === 'groups'">
-                    <div class="flex justify-between mb-4">
-                        <h2 class="text-lg font-bold">Manage Host Groups</h2>
-                        <button @click="startNewGroup" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                            <i class="fas fa-plus mr-1"></i> New Group
-                        </button>
-                    </div>
-
-                    <div v-if="editingGroup" class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-500">
-                        <h3 class="text-lg font-bold mb-4">[[ groupForm.id ? 'Edit Group: ' + groupForm.name : 'Create New Group' ]]</h3>
-                        <div class="space-y-4">
-                            <input v-model="groupForm.name" placeholder="Group Name (e.g., Prod Web Servers)" class="border p-2 rounded w-full">
-                            
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Select Member Hosts</label>
-                                <div class="flex items-center mb-2">
-                                    <input type="checkbox" id="selectAllGroupHosts"
-                                        :checked="groupForm.host_ids.length === hosts.length"
-                                        @change="toggleSelectAllGroupHosts($event)"
-                                        class="mr-2">
-                                    <label for="selectAllGroupHosts" class="select-none">Select All Hosts</label>
-                                </div>
-                                <div class="mt-2 h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50">
-                                    <div v-for="h in hosts" :key="h.id" class="flex items-center">
-                                        <input type="checkbox" :value="h.id" v-model="groupForm.host_ids" class="mr-2">
-                                        <span>[[ h.name ]] ([[ h.hostname ]])</span>
-                                    </div>
-                                </div>
-                                <p class="text-sm text-gray-600 mt-2">
-                                    [[ groupForm.host_ids.length ]] Hosts selected for this group.
-                                </p>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button @click="saveGroup" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                                    <i class="fas fa-save mr-1"></i> Save Group
-                                </button>
-                                <button @click="cancelGroupEdit" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 gap-4">
-                        <div v-for="g in groups" :key="g.id" class="bg-white p-4 rounded shadow flex justify-between items-center">
-                            <div>
-                                <div class="font-bold">[[ g.name ]]</div>
-                                <div class="text-sm text-gray-600 mt-1">[[ g.host_ids.length ]] Member Hosts</div>
-                            </div>
-                            <div class="space-x-2">
-                                <button @click="editGroup(g)" class="text-blue-600 hover:text-blue-800">Edit</button>
-                                <button @click="deleteGroup(g.id)" class="text-red-600 hover:text-red-800">Delete</button>
-                            </div>
-                        </div>
-                    </div>
+                <div v-if="currentView === 'cronjobs'">
+                    {% include 'cronjobs.html' %}
+                </div>
+                <div v-if="currentView === 'cronHistory'">
+                    {% include 'cronhistory.html' %}
                 </div>
                 <div v-if="currentView === 'hosts'">
-                    <div class="bg-white p-6 rounded shadow mb-6">
-                        <h3 class="text-lg font-bold mb-4">Add Host</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-end">
-                            <input v-model="hostForm.name" placeholder="Friendly Name" class="border p-2 rounded">
-                            <input v-model="hostForm.hostname" placeholder="Hostname/IP" class="border p-2 rounded">
-                            <input v-model="hostForm.username" placeholder="Username" class="border p-2 rounded">
-                            <input v-model="hostForm.port" type="number" placeholder="22" class="border p-2 rounded">
-                            <button @click="addHost" class="bg-green-600 text-white p-2 rounded">Add</button>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded shadow overflow-hidden">
-                        <table class="w-full text-left">
-                            <thead class="bg-gray-50 border-b">
-                                <tr>
-                                    <th class="p-3">Name</th>
-                                    <th class="p-3">Hostname</th>
-                                    <th class="p-3">User</th>
-                                    <th class="p-3">Groups</th>
-                                    <th class="p-3">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="h in hosts" :key="h.id" class="border-b">
-                                    <td class="p-3">[[ h.name ]]</td>
-                                    <td class="p-3 font-mono text-sm">[[ h.hostname ]]</td>
-                                    <td class="p-3">[[ h.username ]]</td>
-                                    <td class="p-3 text-sm text-gray-500">
-                                        <span v-if="h.group_ids.length > 0">
-                                            [[ h.group_ids.map(id => getGroupName(id)).join(', ') ]]
-                                        </span>
-                                        <span v-else>None</span>
-                                    </td>
-                                    <td class="p-3">
-                                        <button @click="deleteHost(h.id)" class="text-red-600">Delete</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    {% include 'hosts.html' %}
                 </div>
-
+                <div v-if="currentView === 'groups'">
+                    {% include 'groups.html' %}
+                </div>
                 <div v-if="currentView === 'keys'">
-                    <div class="bg-white p-6 rounded shadow mb-6">
-                        <h3 class="text-lg font-bold mb-4">Add SSH Key</h3>
-                        <div class="space-y-2">
-                            <input v-model="keyForm.name" placeholder="Key Name" class="border p-2 rounded w-full">
-                            <textarea v-model="keyForm.private_key" placeholder="Paste Private Key Here (RSA/PEM)..." class="border p-2 rounded w-full font-mono text-xs h-32"></textarea>
-                            <button @click="addKey" class="bg-green-600 text-white px-4 py-2 rounded">Save Key</button>
-                        </div>
-                        <p class="text-xs text-red-500 mt-2">Warning: Keys are stored unencrypted in this demo database.</p>
-                    </div>
-                    <div class="space-y-2">
-                        <div v-for="k in keys" :key="k.id" class="bg-white p-3 rounded shadow flex justify-between">
-                            <span class="font-mono">[[ k.name ]]</span>
-                            <button @click="deleteKey(k.id)" class="text-red-600">Delete</button>
-                        </div>
-                    </div>
+                    {% include 'keys.html' %}
                 </div>
-
-                <div v-if="currentView === 'satellite'" class="bg-white p-6 rounded shadow">
-                    <h2 class="text-lg font-bold mb-4">Red Hat Satellite Host Synchronization</h2>
-                    <p class="text-sm text-gray-600 mb-4">
-                        Configure your Satellite API endpoint and credentials to automatically import hosts into Bash Tower.
-                        The API URL should point to the hosts endpoint, e.g., <code>https://satellite.example.com/api/v2/hosts</code>.
-                    </p>
-
-                    <h3 class="font-semibold mb-2">1. API Configuration</h3>
-                    <div class="space-y-4 mb-6 p-4 border rounded bg-gray-50">
-                        <input v-model="satelliteForm.url" placeholder="Satellite API URL (e.g., https://satellite.example.com/api/v2/hosts)" class="border p-2 rounded w-full">
-                        <input v-model="satelliteForm.username" placeholder="API Username" class="border p-2 rounded w-full">
-                        <input v-model="satelliteForm.password" type="password" placeholder="API Password (Only needed to update)" class="border p-2 rounded w-full">
-                        <input v-model="satelliteForm.ssh_username" placeholder="Default SSH Username (e.g., ec2-user, centos)" class="border p-2 rounded w-full"> 
-                        <button @click="saveSatelliteConfig" class="bg-blue-600 text-white p-2 rounded hover:bg-blue-700 w-full" :disabled="satelliteLoading">
-                            <i v-if="satelliteLoading" class="fas fa-spinner fa-spin mr-1"></i>
-                            [[ satelliteLoading ? 'Saving...' : 'Save Configuration' ]]
-                        </button>
-                        <p v-if="satelliteConfig.url" class="text-xs text-green-600">
-                            Current URL: [[ satelliteConfig.url ]] | User: [[ satelliteConfig.username ]] | SSH User: [[ satelliteConfig.ssh_username ]]
-                        </p>
-                    </div>
-
-                    <h3 class="font-semibold mb-2">2. Synchronize Hosts</h3>
-                    <div class="p-4 border rounded">
-                        <button @click="syncSatelliteHosts" class="bg-purple-600 text-white p-2 rounded hover:bg-purple-700 w-full" :disabled="satelliteLoading || !satelliteConfig.url">
-                            <i v-if="satelliteLoading" class="fas fa-spinner fa-spin mr-1"></i>
-                            [[ satelliteLoading ? 'Syncing...' : 'Sync Hosts Now' ]]
-                        </button>
-                        <p v-if="syncMessage" class="mt-3 text-sm" :class="syncMessage.includes('error') ? 'text-red-600' : 'text-green-600'">
-                            [[ syncMessage ]]
-                        </p>
-                    </div>
+                <div v-if="currentView === 'satellite'">
+                    {% include 'satellite.html' %}
                 </div>
-
-                <div v-if="currentView === 'about'" class="bg-white p-6 rounded shadow max-w-2xl mx-auto">
-                    <h2 class="text-3xl font-bold mb-4 flex items-center">
-                        <i class="fas fa-info-circle text-blue-600 mr-2"></i> About Bash Tower
-                    </h2>
-                    <p class="text-gray-700 mb-6">
-                        Bash Tower is a simple, web-based tool designed to run SSH commands and Bash scripts across multiple hosts, inspired by larger automation platforms. This project is built for home lab enthusiasts and small teams looking for an easy way to manage and automate tasks on their servers without the complexity of enterprise solutions.
-                    </p>
-
-                    <h3 class="text-xl font-semibold mb-3">Project Information</h3>
-                    <div class="space-y-2 p-4 border rounded bg-gray-50">
-                        <p><strong>Developed by:</strong> Fotios Tsiadimos</p>
-                        <p>
-                            <strong>Report Issues & Contribute:</strong>
-                            <a href="https://github.com/ftsiadimos/BashTower" target="_blank" class="text-blue-600 hover:text-blue-800 break-words">
-                                <i class="fab fa-github mr-1"></i> https://github.com/ftsiadimos/BashTower
-                            </a>
-                        </p>
-                        <p><strong>Version:</strong> 1.0.0 BashTower</p>
-                    </div>
-                     <img src="/static/img/BashTower.png" alt="BashTower Logo" class="mx-auto  w-52 h-52">
+                <div v-if="currentView === 'settings'">
+                    {% include 'settings.html' %}
                 </div>
-
-                <div v-if="currentView === 'cronjobs'">
-                    <div class="flex justify-between mb-4">
-                        <h2 class="text-lg font-bold">Manage Cron Jobs</h2>
-                        <button @click="startNewCronJob" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                            <i class="fas fa-plus mr-1"></i> New Cron Job
-                        </button>
-                    </div>
-
-                    <div v-if="editingCronJob" class="bg-white p-6 rounded shadow mb-6 border-l-4 border-blue-500">
-                        <h3 class="text-lg font-bold mb-4">[[ cronJobForm.id ? 'Edit Cron Job: ' + cronJobForm.name : 'Create New Cron Job' ]]</h3>
-                        <div class="space-y-4">
-                            <input v-model="cronJobForm.name" placeholder="Cron Job Name (e.g., Daily Backup)" class="border p-2 rounded w-full">
-                            <input v-model="cronJobForm.schedule" placeholder="Cron Schedule (e.g., 0 0 * * * for daily midnight)" class="border p-2 rounded w-full">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Select Template</label>
-                                <select v-model="cronJobForm.template_id" class="mt-1 block w-full border border-gray-300 rounded p-2">
-                                    <option v-for="t in templates" :value="t.id" :key="t.id">[[ t.name ]]</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Select SSH Key</label>
-                                <select v-model="cronJobForm.key_id" class="mt-1 block w-full border border-gray-300 rounded p-2">
-                                    <option v-for="k in keys" :value="k.id" :key="k.id">[[ k.name ]]</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Select Target Hosts</label>
-                                <div class="flex items-center mb-2">
-                                    <input type="checkbox" id="selectAllCronJobHosts" @change="toggleSelectAllCronJobHosts" class="mr-2">
-                                    <label for="selectAllCronJobHosts" class="text-sm text-gray-700">Select All Hosts</label>
-                                </div>
-                                <div class="mt-2 h-32 overflow-y-auto border border-gray-300 rounded p-2 bg-gray-50">
-                                    <label v-for="host in hosts" :key="host.id" class="flex items-center space-x-2">
-                                        <input type="checkbox" :value="host.id" v-model="cronJobForm.host_ids">
-                                        <span>[[ host.name ]] ([[ host.hostname ]])</span>
-                                    </label>
-                                </div>
-                                <p class="text-sm text-gray-600 mt-2">Selected hosts: [[ cronJobForm.host_ids.length ]]</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="checkbox" id="cronJobEnabled" v-model="cronJobForm.enabled">
-                                <label for="cronJobEnabled" class="text-sm font-medium text-gray-700">Enabled</label>
-                            </div>
-                            <div class="flex space-x-2">
-                                <button @click="saveCronJob" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-                                    <i class="fas fa-save mr-1"></i> Save Cron Job
-                                </button>
-                                <button @click="cancelCronJobEdit" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500">
-                                    Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 gap-4">
-                        <div v-for="job in cronjobs" :key="job.id" class="bg-white p-4 rounded shadow flex justify-between items-center">
-                            <div>
-                                <div class="font-bold">[[ job.name ]]</div>
-                                <div class="text-sm text-gray-600">Schedule: [[ job.schedule ]]</div>
-                                <div class="text-xs text-gray-500">Template: [[ getTemplateNameById(job.template_id) ]]</div>
-                                <div class="text-xs text-gray-500">Key: [[ getKeyNameById(job.key_id) ]]</div>
-                                <div class="text-xs text-gray-500">Hosts: [[ getHostNamesByIds(job.host_ids) ]]</div>
-                                <div class="text-xs text-gray-500">Status: <span :class="{'text-green-600': job.enabled, 'text-red-600': !job.enabled}">[[ job.enabled ? 'Enabled' : 'Disabled' ]]</span></div>
-                                <div v-if="job.last_run" class="text-xs text-gray-500">Last Run: [[ new Date(job.last_run).toLocaleString() ]]</div>
-                                <div v-if="job.next_run" class="text-xs text-gray-500">Next Run: [[ new Date(job.next_run).toLocaleString() ]]</div>
-                            </div>
-                            <div class="space-x-2">
-                                <button @click="editCronJob(job)" class="text-blue-600 hover:text-blue-800">Edit</button>
-                                <button @click="deleteCronJob(job.id)" class="text-red-600 hover:text-red-800">Delete</button>
-                            </div>
-                        </div>
-                    </div>
+                <div v-if="currentView === 'users'">
+                    {% include 'users.html' %}
                 </div>
-
-                <div v-if="currentView === 'cronHistory'">
-                    <h2 class="text-lg font-bold mb-4">Cron Job History</h2>
-                    <div class="bg-white rounded shadow overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Template</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Host</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Run At</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Output</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <tr v-for="log in cronHistory" :key="log.id">
-                                    <td class="px-6 py-4 whitespace-nowrap">[[ log.cron_job_name ]]</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">[[ log.template_name ]]</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">[[ log.hostname ]]</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">[[ new Date(log.created_at).toLocaleString() ]]</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span :class="{
-                                            'px-2 inline-flex text-xs leading-5 font-semibold rounded-full': true,
-                                            'bg-green-100 text-green-800': log.status === 'success',
-                                            'bg-red-100 text-red-800': log.status === 'error' || log.status === 'connection_failed',
-                                            'bg-yellow-100 text-yellow-800': log.status === 'running'
-                                        }">[[ log.status ]]</span>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <button @click="showCronLogOutput(log)" class="text-blue-600 hover:text-blue-800">View</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <!-- Clean logs button -->
-                    <div class="flex justify-end mb-2">
-                        <button @click="cleanCronLogs" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
-                            <i class="fas fa-trash-alt mr-1"></i> Clean Logs
-                        </button>
-                    </div>
-                    <!-- Pagination controls -->
-                    <div class="flex justify-between items-center mt-2">
-                        <button @click="prevCronHistoryPage" :disabled="cronHistoryPage <= 1" class="bg-gray-300 text-gray-800 px-2 py-1 rounded disabled:opacity-50">Previous</button>
-                        <span>Page [[ cronHistoryPage ]] of [[ Math.ceil(cronHistoryTotal / cronHistoryPerPage) ]]</span>
-                        <button @click="nextCronHistoryPage" :disabled="cronHistoryPage >= Math.ceil(cronHistoryTotal / cronHistoryPerPage)" class="bg-gray-300 text-gray-800 px-2 py-1 rounded disabled:opacity-50">Next</button>
-                    </div>
-                    <div v-if="activeCronLog" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full" @click.self="activeCronLog = null">
-                        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-bold">Output for [[ activeCronLog.cron_job_name ]] on [[ activeCronLog.hostname ]]</h3>
-                                <button @click="activeCronLog = null" class="text-gray-500 hover:text-gray-700">Close</button>
-                            </div>
-                            <div class="bg-slate-900 text-green-400 font-mono text-xs overflow-x-auto p-3 rounded h-64">
-                                <pre>[[ activeCronLog.stdout ]]</pre>
-                                <pre class="text-red-400">[[ activeCronLog.stderr ]]</pre>
-                            </div>
-                        </div>
-                    </div>
+                <div v-if="currentView === 'about'">
+                    {% include 'about.html' %}
                 </div>
-
-
             </main>
         </div>
-        
-        </div>
+    </div>
 
-    <script src="/static/js/main.js"></script>
+    <!-- Load Module Scripts (must be loaded before main.js) -->
+    <script src="{{ url_for('static', filename='js/modules/templates.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/hosts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/groups.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/keys.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/jobs.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/satellite.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/cronjobs.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/cronhistory.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/settings.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modules/users.js') }}"></script>
+    
+    <!-- Main Application Entry Point -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
-

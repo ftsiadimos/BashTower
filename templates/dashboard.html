@@ -1,0 +1,336 @@
+<div class="max-w-7xl mx-auto" @click="templateDropdownOpen = false">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+            <p class="text-gray-500 mt-1">Execute scripts and monitor job results</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full">
+                    <i class="fas fa-file-code"></i> [[ templates.length ]] Templates
+                </span>
+                <span class="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-full">
+                    <i class="fas fa-server"></i> [[ hosts.length ]] Hosts
+                </span>
+                <span class="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 rounded-full">
+                    <i class="fas fa-layer-group"></i> [[ groups.length ]] Groups
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <!-- Run Template Section - 3 columns -->
+        <div class="lg:col-span-3 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="p-4 bg-gradient-to-r from-green-600 to-emerald-700 border-b">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-rocket text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white">Run Script</h3>
+                        <p class="text-xs text-white/70">Execute templates on remote hosts</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-5 space-y-5">
+                <!-- Template & Key Selection Row -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-file-code mr-1 text-gray-400"></i> Template
+                        </label>
+                        <!-- Custom Template Dropdown with Icons -->
+                        <div class="relative" @click.stop>
+                            <button type="button" @click="templateDropdownOpen = !templateDropdownOpen" 
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition bg-white text-left flex items-center justify-between">
+                                <span v-if="!runForm.template_id" class="text-gray-500">Select a template...</span>
+                                <span v-else class="flex items-center gap-2">
+                                    <i :class="getSelectedTemplate()?.script_type === 'python' ? 'fab fa-python text-yellow-500' : 'fas fa-terminal text-gray-600'"></i>
+                                    [[ getSelectedTemplate()?.name ]]
+                                </span>
+                                <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform" :class="templateDropdownOpen ? 'rotate-180' : ''"></i>
+                            </button>
+                            <!-- Dropdown Menu -->
+                            <div v-if="templateDropdownOpen" class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                <div v-if="templates.length === 0" class="px-4 py-3 text-gray-500 text-sm">No templates available</div>
+                                <button v-for="t in templates" :key="t.id" type="button"
+                                    @click="runForm.template_id = t.id; templateDropdownOpen = false"
+                                    :class="[
+                                        'w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-gray-50 transition',
+                                        runForm.template_id === t.id ? 'bg-green-50' : ''
+                                    ]">
+                                    <span :class="[
+                                        'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+                                        t.script_type === 'python' ? 'bg-yellow-100' : 'bg-gray-100'
+                                    ]">
+                                        <i :class="t.script_type === 'python' ? 'fab fa-python text-yellow-600' : 'fas fa-terminal text-gray-600'"></i>
+                                    </span>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-medium text-gray-800 truncate">[[ t.name ]]</p>
+                                        <p class="text-xs text-gray-500">[[ t.script_type === 'python' ? 'Python' : 'Bash' ]] script</p>
+                                    </div>
+                                    <i v-if="runForm.template_id === t.id" class="fas fa-check text-green-600"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-key mr-1 text-gray-400"></i> SSH Key
+                        </label>
+                        <select v-model="runForm.key_id" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition">
+                            <option value="" disabled>Select a key...</option>
+                            <option v-for="k in keys" :value="k.id">[[ k.name ]]</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Target Selection -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <i class="fas fa-crosshairs mr-1 text-gray-400"></i> Target Selection
+                    </label>
+                    
+                    <!-- Selection Type Tabs -->
+                    <div class="flex gap-2 mb-4">
+                        <button type="button" 
+                            @click="runForm.selection_type = 'groups'"
+                            :class="[
+                                'flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2',
+                                runForm.selection_type === 'groups' 
+                                    ? 'bg-green-100 text-green-700 ring-2 ring-green-500' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ]">
+                            <i class="fas fa-layer-group"></i> Host Groups
+                        </button>
+                        <button type="button"
+                            @click="runForm.selection_type = 'hosts'"
+                            :class="[
+                                'flex-1 py-2.5 px-4 rounded-lg font-medium text-sm transition flex items-center justify-center gap-2',
+                                runForm.selection_type === 'hosts' 
+                                    ? 'bg-green-100 text-green-700 ring-2 ring-green-500' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            ]">
+                            <i class="fas fa-server"></i> Individual Hosts
+                        </button>
+                    </div>
+
+                    <!-- Groups Selection -->
+                    <div v-if="runForm.selection_type === 'groups'" class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="p-3 bg-gray-100 border-b flex items-center justify-between">
+                            <label class="inline-flex items-center cursor-pointer text-sm">
+                                <input type="checkbox" id="selectAllGroups" :checked="runForm.group_ids.length === groups.length && groups.length > 0" @change="toggleSelectAllGroups($event)" class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mr-2">
+                                <span class="font-medium text-gray-700">Select All</span>
+                            </label>
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" v-model="groupSearchQuery" placeholder="Search groups..." class="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg w-44 focus:ring-2 focus:ring-green-400 outline-none">
+                            </div>
+                        </div>
+                        <div class="p-3 max-h-40 overflow-y-auto">
+                            <div v-for="g in filteredGroups" :key="g.id" class="flex items-center p-2 hover:bg-white rounded-lg transition">
+                                <input type="checkbox" :value="g.id" v-model="runForm.group_ids" :id="'g-'+g.id" class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mr-3">
+                                <label :for="'g-'+g.id" class="flex-1 cursor-pointer">
+                                    <span class="text-sm font-medium text-gray-800">[[ g.name ]]</span>
+                                    <span class="text-xs text-gray-500 ml-2">([[ g.host_ids.length ]] hosts)</span>
+                                </label>
+                            </div>
+                            <div v-if="filteredGroups.length === 0" class="text-center py-6">
+                                <i class="fas fa-inbox text-gray-300 text-2xl mb-2"></i>
+                                <p class="text-gray-400 text-sm">No groups found</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hosts Selection -->
+                    <div v-else-if="runForm.selection_type === 'hosts'" class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="p-3 bg-gray-100 border-b flex items-center justify-between">
+                            <label class="inline-flex items-center cursor-pointer text-sm">
+                                <input type="checkbox" id="selectAllHosts" :checked="runForm.host_ids.length === hosts.length && hosts.length > 0" @change="toggleSelectAllHosts($event)" class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mr-2">
+                                <span class="font-medium text-gray-700">Select All</span>
+                            </label>
+                            <div class="relative">
+                                <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs"></i>
+                                <input type="text" v-model="hostSearchQuery" placeholder="Search hosts..." class="pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-lg w-44 focus:ring-2 focus:ring-green-400 outline-none">
+                            </div>
+                        </div>
+                        <div class="p-3 max-h-40 overflow-y-auto">
+                            <div v-for="h in filteredHosts" :key="h.id" class="flex items-center p-2 hover:bg-white rounded-lg transition">
+                                <input type="checkbox" :value="h.id" v-model="runForm.host_ids" :id="'h-'+h.id" class="w-4 h-4 rounded border-gray-300 text-green-600 focus:ring-green-500 mr-3">
+                                <label :for="'h-'+h.id" class="flex-1 cursor-pointer">
+                                    <span class="text-sm font-medium text-gray-800">[[ h.name ]]</span>
+                                    <span class="text-xs text-gray-500 ml-2 font-mono">([[ h.hostname ]])</span>
+                                </label>
+                            </div>
+                            <div v-if="filteredHosts.length === 0" class="text-center py-6">
+                                <i class="fas fa-inbox text-gray-300 text-2xl mb-2"></i>
+                                <p class="text-gray-400 text-sm">No hosts found</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Count Badge -->
+                    <div class="mt-3 flex items-center justify-between">
+                        <span class="text-sm text-gray-600">
+                            <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                            <span class="font-medium">[[ selectedHostCount ]]</span> host(s) selected
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Launch Button Footer -->
+            <div class="px-5 py-4 bg-gray-50 border-t border-gray-100">
+                <button @click="runJob" :disabled="isRunning || selectedHostCount === 0" 
+                    class="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold flex items-center justify-center gap-2 shadow-md">
+                    <i :class="isRunning ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+                    [[ isRunning ? 'Executing...' : 'Launch Script' ]]
+                </button>
+            </div>
+        </div>
+
+        <!-- Job History Section - 2 columns -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+            <div class="p-4 bg-gradient-to-r from-slate-700 to-slate-900 border-b">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-history text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white">Recent Jobs</h3>
+                        <p class="text-xs text-white/70">[[ jobHistory.length ]] executions</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto max-h-[480px]">
+                <div v-for="job in jobHistory" :key="job.id" @click="viewJob(job.id)" 
+                    class="p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition group">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div :class="[
+                                'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
+                                (job.status === 'success' || job.status === 'complete' || job.status === 'completed') ? 'bg-green-100' : 
+                                (job.status === 'error' || job.status === 'failed') ? 'bg-red-100' : 
+                                job.status === 'running' ? 'bg-yellow-100' : 'bg-gray-100'
+                            ]">
+                                <i :class="[
+                                    (job.status === 'success' || job.status === 'complete' || job.status === 'completed') ? 'fas fa-check text-green-600' : 
+                                    (job.status === 'error' || job.status === 'failed') ? 'fas fa-times text-red-600' : 
+                                    job.status === 'running' ? 'fas fa-spinner fa-spin text-yellow-600' :
+                                    'fas fa-circle text-gray-400'
+                                ]"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="font-medium text-gray-800 text-sm truncate group-hover:text-green-600 transition">[[ job.template_name ]]</p>
+                                <p class="text-xs text-gray-500">Job #[[ job.id ]]</p>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <span :class="[
+                                'px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider',
+                                (job.status === 'success' || job.status === 'complete' || job.status === 'completed') ? 'bg-green-100 text-green-700' : 
+                                (job.status === 'error' || job.status === 'failed') ? 'bg-red-100 text-red-700' : 
+                                job.status === 'running' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-gray-100 text-gray-700'
+                            ]">[[ job.status ]]</span>
+                            <p class="text-xs text-gray-400 mt-1">[[ new Date(job.created_at).toLocaleTimeString() ]]</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div v-if="jobHistory.length === 0" class="p-10 text-center">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-inbox text-gray-400 text-2xl"></i>
+                    </div>
+                    <p class="text-gray-500 font-medium">No jobs yet</p>
+                    <p class="text-gray-400 text-sm mt-1">Run a script to see history</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Output Terminal Section -->
+    <div v-if="activeJob" class="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <!-- Header -->
+        <div class="p-4 bg-gradient-to-r from-slate-800 to-slate-950 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-terminal text-white text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-white">[[ activeJob.template_name ]]</h3>
+                    <p class="text-xs text-white/70">Job #[[ activeJob.id ]] • [[ activeJob.logs.length ]] host(s)</p>
+                </div>
+            </div>
+            <button @click="activeJob = null" class="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Output Tabs/Logs -->
+        <div class="divide-y divide-gray-100">
+            <div v-for="log in activeJob.logs" :key="log.hostname" class="border-l-4" :class="log.status === 'success' ? 'border-l-green-500' : (log.status === 'running' ? 'border-l-yellow-500' : 'border-l-red-500')">
+                <!-- Log Header -->
+                <div class="px-4 py-3 bg-gray-50 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div :class="[
+                            'w-8 h-8 rounded-lg flex items-center justify-center',
+                            log.status === 'success' ? 'bg-green-100' : (log.status === 'running' ? 'bg-yellow-100' : 'bg-red-100')
+                        ]">
+                            <i :class="[
+                                'fas text-sm',
+                                log.status === 'success' ? 'fa-check text-green-600' : (log.status === 'running' ? 'fa-spinner fa-spin text-yellow-600' : 'fa-times text-red-600')
+                            ]"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 text-sm">[[ getHostFriendlyName(log.hostname) ]]</p>
+                            <p class="text-xs text-gray-500 font-mono">[[ log.hostname ]]</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span :class="[
+                            'px-2.5 py-1 rounded-full text-xs font-semibold',
+                            log.status === 'success' ? 'bg-green-100 text-green-700' : (log.status === 'running' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700')
+                        ]">[[ log.status ]]</span>
+                        <button v-if="log.status !== 'success' && log.status !== 'running'" @click="analyzeError(log, activeJob.template_name)" 
+                            class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition text-xs font-medium flex items-center gap-1">
+                            <i class="fas fa-magic"></i> Troubleshoot
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Log Output -->
+                <div class="bg-slate-950 p-4 font-mono text-sm overflow-x-auto max-h-64 overflow-y-auto">
+                    <div v-if="log.stdout" class="mb-3">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="text-green-400 text-xs font-semibold">STDOUT</span>
+                        </div>
+                        <pre class="text-green-400 whitespace-pre-wrap leading-relaxed">[[ log.stdout ]]</pre>
+                    </div>
+                    <div v-if="log.stderr">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <span class="text-red-400 text-xs font-semibold">STDERR</span>
+                        </div>
+                        <pre class="text-red-400 whitespace-pre-wrap leading-relaxed">[[ log.stderr ]]</pre>
+                    </div>
+                    <div v-if="!log.stdout && !log.stderr" class="text-gray-500 italic">No output captured</div>
+                    
+                    <!-- AI Analysis -->
+                    <div v-if="log.aiAnalysis" class="mt-4 p-4 bg-purple-950/50 border border-purple-800 rounded-lg">
+                        <div class="flex items-center gap-2 mb-3">
+                            <i class="fas fa-magic text-purple-400"></i>
+                            <span class="text-purple-300 text-xs font-semibold uppercase">AI Analysis</span>
+                        </div>
+                        <div class="text-gray-300 text-sm prose prose-invert prose-sm max-w-none" v-html="renderMarkdown(log.aiAnalysis)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

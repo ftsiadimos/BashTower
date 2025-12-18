@@ -1,0 +1,402 @@
+<div class="max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Settings</h1>
+            <p class="text-gray-500 mt-1">Configure application preferences and integrations</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span v-if="aiConfigured" class="px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                <i class="fas fa-check-circle mr-1"></i>AI Ready
+            </span>
+            <span v-else class="px-3 py-1.5 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                <i class="fas fa-exclamation-circle mr-1"></i>AI Not Configured
+            </span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Left Column - AI Configuration -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- AI Provider Card -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-gradient-to-r from-purple-500 to-indigo-600 border-b">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-robot text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-white">AI Configuration</h3>
+                            <p class="text-xs text-white/70">Power up troubleshooting & script assistant</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-5 space-y-5">
+                    <!-- Provider Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-cloud mr-1 text-gray-400"></i> AI Provider
+                        </label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <button type="button" 
+                                @click="settingsForm.ai_provider = 'openai'; onProviderChange()"
+                                :class="[
+                                    'p-4 rounded-xl border-2 transition-all text-center',
+                                    settingsForm.ai_provider === 'openai' 
+                                        ? 'border-green-500 bg-green-50 ring-2 ring-green-200' 
+                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                ]">
+                                <div class="w-10 h-10 bg-black rounded-lg flex items-center justify-center mx-auto mb-2">
+                                    <span class="text-white font-bold text-sm">GPT</span>
+                                </div>
+                                <p class="font-medium text-gray-800 text-sm">OpenAI</p>
+                                <p class="text-xs text-gray-500">GPT-3.5 / GPT-4</p>
+                            </button>
+                            <button type="button"
+                                @click="settingsForm.ai_provider = 'gemini'; onProviderChange()"
+                                :class="[
+                                    'p-4 rounded-xl border-2 transition-all text-center',
+                                    settingsForm.ai_provider === 'gemini' 
+                                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200' 
+                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                ]">
+                                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center mx-auto mb-2">
+                                    <i class="fas fa-gem text-white"></i>
+                                </div>
+                                <p class="font-medium text-gray-800 text-sm">Gemini</p>
+                                <p class="text-xs text-gray-500">Google AI</p>
+                            </button>
+                            <button type="button"
+                                @click="settingsForm.ai_provider = 'ollama'; onProviderChange()"
+                                :class="[
+                                    'p-4 rounded-xl border-2 transition-all text-center',
+                                    settingsForm.ai_provider === 'ollama' 
+                                        ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200' 
+                                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                ]">
+                                <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center mx-auto mb-2">
+                                    <i class="fas fa-server text-white"></i>
+                                </div>
+                                <p class="font-medium text-gray-800 text-sm">Ollama</p>
+                                <p class="text-xs text-gray-500">Self-hosted</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- API Key (for OpenAI and Gemini) -->
+                    <div v-if="settingsForm.ai_provider !== 'ollama'">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-key mr-1 text-gray-400"></i> API Key
+                        </label>
+                        <div class="relative">
+                            <input 
+                                :type="showApiKey ? 'text' : 'password'" 
+                                v-model="settingsForm.ai_api_key" 
+                                :placeholder="settingsForm.ai_provider === 'openai' ? 'sk-...' : 'AIza...'"
+                                class="w-full px-4 py-2.5 pr-20 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition font-mono text-sm"
+                            >
+                            <button type="button" @click="showApiKey = !showApiKey" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i :class="showApiKey ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            <i class="fas fa-external-link-alt mr-1"></i>
+                            <span v-if="settingsForm.ai_provider === 'openai'">
+                                Get your key from <a href="https://platform.openai.com/api-keys" target="_blank" class="text-purple-600 hover:underline font-medium">OpenAI Platform</a>
+                            </span>
+                            <span v-else-if="settingsForm.ai_provider === 'gemini'">
+                                Get your key from <a href="https://makersuite.google.com/app/apikey" target="_blank" class="text-purple-600 hover:underline font-medium">Google AI Studio</a>
+                            </span>
+                        </p>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-microchip mr-1 text-gray-400"></i> Model
+                        </label>
+                        
+                        <!-- OpenAI Models -->
+                        <select v-if="settingsForm.ai_provider === 'openai'" v-model="settingsForm.ai_model" 
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition">
+                            <option value="gpt-3.5-turbo">GPT-3.5 Turbo — Fast & Affordable</option>
+                            <option value="gpt-4">GPT-4 — Most Capable</option>
+                            <option value="gpt-4-turbo">GPT-4 Turbo — Latest Features</option>
+                            <option value="gpt-4o">GPT-4o — Multimodal</option>
+                            <option value="gpt-4o-mini">GPT-4o Mini — Budget Friendly</option>
+                        </select>
+                        
+                        <!-- Gemini Models -->
+                        <select v-else-if="settingsForm.ai_provider === 'gemini'" v-model="settingsForm.ai_model" 
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition">
+                            <option value="gemini-pro">Gemini Pro — Balanced</option>
+                            <option value="gemini-1.5-pro">Gemini 1.5 Pro — Advanced</option>
+                            <option value="gemini-1.5-flash">Gemini 1.5 Flash — Fast</option>
+                        </select>
+                        
+                        <!-- Ollama Models -->
+                        <div v-else class="space-y-2">
+                            <div class="flex gap-2">
+                                <select v-model="settingsForm.ai_model" :disabled="ollamaModelsLoading" 
+                                    class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition">
+                                    <option v-if="ollamaModels.length === 0 && !ollamaModelsLoading" value="">-- No models found --</option>
+                                    <option v-for="model in ollamaModels" :key="model.name" :value="model.name">
+                                        [[ model.display ]]
+                                    </option>
+                                </select>
+                                <button type="button"
+                                    @click="fetchOllamaModels" 
+                                    :disabled="ollamaModelsLoading"
+                                    class="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition">
+                                    <i :class="ollamaModelsLoading ? 'fas fa-spinner fa-spin' : 'fas fa-sync'"></i>
+                                </button>
+                            </div>
+                            <p v-if="ollamaModelsError" class="text-xs text-red-600 bg-red-50 p-2 rounded">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> [[ ollamaModelsError ]]
+                            </p>
+                            <p v-else-if="ollamaModels.length > 0" class="text-xs text-green-600">
+                                <i class="fas fa-check-circle mr-1"></i> [[ ollamaModels.length ]] model(s) available
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Ollama Endpoint -->
+                    <div v-if="settingsForm.ai_provider === 'ollama'">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-plug mr-1 text-gray-400"></i> Ollama Endpoint
+                        </label>
+                        <div class="flex gap-2">
+                            <input 
+                                type="text" 
+                                v-model="settingsForm.ai_endpoint" 
+                                placeholder="http://localhost:11434"
+                                class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition font-mono text-sm"
+                            >
+                            <button type="button"
+                                @click="fetchOllamaModels" 
+                                :disabled="ollamaModelsLoading"
+                                class="px-4 py-2.5 bg-orange-100 text-orange-700 border border-orange-300 rounded-lg hover:bg-orange-200 disabled:opacity-50 transition font-medium">
+                                <i :class="ollamaModelsLoading ? 'fas fa-spinner fa-spin' : 'fas fa-plug'" class="mr-1"></i> Test
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Default: localhost:11434 • <a href="https://ollama.ai/" target="_blank" class="text-orange-600 hover:underline font-medium">Get Ollama</a>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card Footer - Actions -->
+                <div class="px-5 py-4 bg-gray-50 border-t border-gray-100 flex justify-between items-center">
+                    <button @click="fetchSettings" class="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                    <button @click="saveSettings" :disabled="settingsSaving" 
+                        class="px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 transition font-medium flex items-center gap-2 shadow-md">
+                        <i :class="settingsSaving ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+                        [[ settingsSaving ? 'Saving...' : 'Save Settings' ]]
+                    </button>
+                </div>
+            </div>
+
+            <!-- Success/Error Message -->
+            <div v-if="settingsMessage" 
+                class="p-4 rounded-xl flex items-center gap-3"
+                :class="settingsMessage.includes('Error') ? 'bg-red-50 border border-red-200 text-red-700' : 'bg-green-50 border border-green-200 text-green-700'">
+                <i :class="settingsMessage.includes('Error') ? 'fas fa-times-circle text-xl' : 'fas fa-check-circle text-xl'"></i>
+                <span>[[ settingsMessage ]]</span>
+            </div>
+        </div>
+
+        <!-- Right Column - Info Cards -->
+        <div class="space-y-6">
+            <!-- AI Features Info -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-gradient-to-r from-green-500 to-emerald-600">
+                    <h3 class="font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-magic"></i> AI Features
+                    </h3>
+                </div>
+                <div class="p-4 space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-bug text-purple-600 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 text-sm">Error Analysis</p>
+                            <p class="text-xs text-gray-500">Get intelligent troubleshooting help for failed jobs</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-code text-blue-600 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 text-sm">Script Assistant</p>
+                            <p class="text-xs text-gray-500">Generate and improve bash scripts with AI</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-lightbulb text-green-600 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 text-sm">Smart Suggestions</p>
+                            <p class="text-xs text-gray-500">Context-aware recommendations for your scripts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Provider Comparison -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-gradient-to-r from-slate-600 to-slate-800">
+                    <h3 class="font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-balance-scale"></i> Provider Comparison
+                    </h3>
+                </div>
+                <div class="p-4">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="text-gray-500">
+                                <th class="text-left pb-2">Provider</th>
+                                <th class="text-center pb-2">Cost</th>
+                                <th class="text-center pb-2">Privacy</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-700">
+                            <tr class="border-t border-gray-100">
+                                <td class="py-2 font-medium">OpenAI</td>
+                                <td class="py-2 text-center"><span class="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded">$$</span></td>
+                                <td class="py-2 text-center"><span class="px-2 py-0.5 bg-orange-100 text-orange-700 rounded">Cloud</span></td>
+                            </tr>
+                            <tr class="border-t border-gray-100">
+                                <td class="py-2 font-medium">Gemini</td>
+                                <td class="py-2 text-center"><span class="px-2 py-0.5 bg-green-100 text-green-700 rounded">$</span></td>
+                                <td class="py-2 text-center"><span class="px-2 py-0.5 bg-orange-100 text-orange-700 rounded">Cloud</span></td>
+                            </tr>
+                            <tr class="border-t border-gray-100">
+                                <td class="py-2 font-medium">Ollama</td>
+                                <td class="py-2 text-center"><span class="px-2 py-0.5 bg-green-100 text-green-700 rounded">Free</span></td>
+                                <td class="py-2 text-center"><span class="px-2 py-0.5 bg-green-100 text-green-700 rounded">Local</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Security Note -->
+            <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-200 p-4">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-shield-alt text-amber-600"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium text-amber-800 text-sm">Security Note</p>
+                        <p class="text-xs text-amber-700 mt-1">
+                            API keys are encrypted before storage using AES-256 encryption. For maximum privacy, consider using Ollama for local AI processing.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cron History Management -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-gradient-to-r from-red-500 to-rose-600">
+                    <h3 class="font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-database"></i> Data Management
+                    </h3>
+                </div>
+                <div class="p-4 space-y-4">
+                    <!-- Cron History Count -->
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-history text-blue-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800 text-sm">Cron History</p>
+                                <p class="text-xs text-gray-500">[[ cronHistoryCount ]] entries stored</p>
+                            </div>
+                        </div>
+                        <button @click="refreshCronHistoryCount" class="p-2 text-gray-400 hover:text-gray-600 transition">
+                            <i class="fas fa-sync text-xs"></i>
+                        </button>
+                    </div>
+
+                    <!-- Auto-Delete Limit -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-sliders-h mr-1 text-gray-400"></i> Auto-Delete Threshold
+                        </label>
+                        <div class="flex gap-2">
+                            <select v-model="settingsForm.cron_history_limit" 
+                                class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition text-sm">
+                                <option :value="0">Unlimited (keep all)</option>
+                                <option :value="100">Keep last 100 entries</option>
+                                <option :value="500">Keep last 500 entries</option>
+                                <option :value="1000">Keep last 1,000 entries</option>
+                                <option :value="5000">Keep last 5,000 entries</option>
+                                <option :value="10000">Keep last 10,000 entries</option>
+                            </select>
+                            <button @click="saveSettings" :disabled="settingsSaving" 
+                                class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition font-medium text-sm flex items-center gap-2">
+                                <i :class="settingsSaving ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+                                Save
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-info-circle mr-1"></i> Older entries will be auto-deleted when saving
+                        </p>
+                    </div>
+
+                    <!-- Delete All Button -->
+                    <div class="pt-2 border-t border-gray-100">
+                        <button @click="confirmDeleteCronHistory" 
+                            :disabled="cronHistoryCount === 0"
+                            class="w-full px-4 py-2.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed transition font-medium text-sm flex items-center justify-center gap-2">
+                            <i class="fas fa-trash-alt"></i> Delete All Cron History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteCronHistoryModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div class="p-5 bg-gradient-to-r from-red-500 to-rose-600">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">Delete Cron History</h3>
+                        <p class="text-white/70 text-sm">This action cannot be undone</p>
+                    </div>
+                </div>
+            </div>
+            <div class="p-5">
+                <p class="text-gray-700 mb-4">
+                    Are you sure you want to delete <strong>all [[ cronHistoryCount ]] cron history entries</strong>? 
+                    This will permanently remove all execution logs.
+                </p>
+                <div class="flex gap-3">
+                    <button @click="showDeleteCronHistoryModal = false" 
+                        class="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium">
+                        Cancel
+                    </button>
+                    <button @click="deleteCronHistory" 
+                        :disabled="deletingCronHistory"
+                        class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition font-medium flex items-center justify-center gap-2">
+                        <i :class="deletingCronHistory ? 'fas fa-spinner fa-spin' : 'fas fa-trash-alt'"></i>
+                        [[ deletingCronHistory ? 'Deleting...' : 'Delete All' ]]
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

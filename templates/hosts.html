@@ -1,0 +1,232 @@
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">Hosts</h1>
+            <p class="text-gray-500 mt-1">Manage your SSH target servers</p>
+        </div>
+        <button @click="showHostModal = true" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+            <i class="fas fa-plus mr-2"></i> Add Host
+        </button>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-server text-blue-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ hosts.length ]]</p>
+                    <p class="text-xs text-gray-500">Total Hosts</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-layer-group text-green-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ groups.length ]]</p>
+                    <p class="text-xs text-gray-500">Host Groups</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-users text-purple-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ [...new Set(hosts.map(h => h.username))].length ]]</p>
+                    <p class="text-xs text-gray-500">Unique Users</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl p-4 border border-gray-200">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-plug text-orange-600"></i>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-gray-800">[[ [...new Set(hosts.map(h => h.port))].length ]]</p>
+                    <p class="text-xs text-gray-500">Unique Ports</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="mb-6">
+        <div class="relative">
+            <input 
+                type="text" 
+                v-model="hostPageSearchQuery" 
+                placeholder="Search hosts by name, address, or user..."
+                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition bg-white"
+            >
+            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <span v-if="hostPageSearchQuery" class="absolute right-4 top-1/2 transform -translate-y-1/2 text-sm text-gray-400">
+                [[ filteredHostsPage.length ]] of [[ hosts.length ]]
+            </span>
+        </div>
+    </div>
+
+    <!-- Hosts Grid -->
+    <div v-if="filteredHostsPage.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-for="h in filteredHostsPage" :key="h.id" 
+            class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
+            
+            <!-- Card Header -->
+            <div class="p-4 border-b border-gray-100">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <div class="w-10 h-10 bg-gradient-to-br from-slate-600 to-slate-800 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-server text-white"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h3 class="font-semibold text-gray-800 truncate">[[ h.name ]]</h3>
+                            <p class="text-sm text-blue-600 font-mono truncate">[[ h.hostname ]]</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button @click="editHost(h)" class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button @click="deleteHost(h.id)" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="p-4 bg-gray-50 space-y-3">
+                <!-- Connection Info -->
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500"><i class="fas fa-user w-4 mr-2"></i>User</span>
+                    <span class="font-medium text-gray-700">[[ h.username ]]</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-500"><i class="fas fa-plug w-4 mr-2"></i>Port</span>
+                    <span class="font-mono text-gray-700">[[ h.port ]]</span>
+                </div>
+                
+                <!-- Groups -->
+                <div v-if="h.group_ids && h.group_ids.length > 0">
+                    <p class="text-xs text-gray-500 mb-2"><i class="fas fa-layer-group w-4 mr-1"></i>Groups</p>
+                    <div class="flex flex-wrap gap-1">
+                        <span v-for="gid in h.group_ids" :key="gid" 
+                            class="px-2 py-1 bg-slate-200 text-slate-700 rounded-md text-xs font-medium">
+                            [[ getGroupName(gid) ]]
+                        </span>
+                    </div>
+                </div>
+                <div v-else class="text-xs text-gray-400 italic">
+                    <i class="fas fa-info-circle mr-1"></i>Not in any group
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="text-center py-16 bg-white rounded-xl border border-gray-200">
+        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-server text-3xl text-gray-300"></i>
+        </div>
+        <h3 class="text-lg font-medium text-gray-600" v-if="hosts.length === 0">No hosts yet</h3>
+        <h3 class="text-lg font-medium text-gray-600" v-else>No hosts match your search</h3>
+        <p class="text-gray-400 mt-1" v-if="hosts.length === 0">Add your first host to get started</p>
+        <p class="text-gray-400 mt-1" v-else>Try adjusting your search terms</p>
+        <button v-if="hosts.length === 0" @click="showHostModal = true" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-plus mr-2"></i> Add Host
+        </button>
+    </div>
+
+    <!-- Add/Edit Host Modal -->
+    <div v-if="showHostModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg" @click.stop>
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-server mr-2 text-blue-600"></i>
+                        [[ editingHost ? 'Edit Host' : 'Add New Host' ]]
+                    </h2>
+                    <button @click="closeHostModal" class="text-gray-400 hover:text-gray-600 transition">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form @submit.prevent="saveHost" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-tag mr-1 text-gray-400"></i> Friendly Name *
+                    </label>
+                    <input 
+                        v-model="hostForm.name" 
+                        type="text" 
+                        required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                        placeholder="e.g., Web Server 01"
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        <i class="fas fa-network-wired mr-1 text-gray-400"></i> Hostname / IP Address *
+                    </label>
+                    <input 
+                        v-model="hostForm.hostname" 
+                        type="text" 
+                        required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition font-mono"
+                        placeholder="e.g., 192.168.1.10 or server.example.com"
+                    >
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-user mr-1 text-gray-400"></i> SSH Username *
+                        </label>
+                        <input 
+                            v-model="hostForm.username" 
+                            type="text" 
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                            placeholder="e.g., ubuntu"
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-plug mr-1 text-gray-400"></i> Port
+                        </label>
+                        <input 
+                            v-model="hostForm.port" 
+                            type="number" 
+                            min="1" 
+                            max="65535"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                            placeholder="22"
+                        >
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="button" @click="closeHostModal" 
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                        class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-save mr-2"></i>[[ editingHost ? 'Update' : 'Add' ]] Host
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
