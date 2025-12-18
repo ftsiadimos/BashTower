@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/flask-2.x-green.svg" alt="Flask 2.x">
   <img src="https://img.shields.io/badge/vue.js-3.x-brightgreen.svg" alt="Vue.js 3">
   <img src="https://img.shields.io/badge/license-GPL--3.0-orange.svg" alt="License GPL-3.0">
-  <a href="https://hub.docker.com/r/ftsiadimos/bashtower"><img src="https://img.shields.io/docker/pulls/ftsiadimos/lightdockerwebui?style=flat-square&logo=docker" alt="Docker Pulls"></a>
+  <a href="https://hub.docker.com/r/ftsiadimos/bashtower"><img src="https://img.shields.io/docker/pulls/ftsiadimos/bashtower?style=flat-square&logo=docker" alt="Docker Pulls"></a>
 </p>
 
 ---
