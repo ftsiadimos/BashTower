@@ -4,6 +4,7 @@
 const CronHistoryMethods = {
     // Fetch cron execution history with pagination and search
     async fetchCronHistory(page = this.cronHistoryPage, perPage = this.cronHistoryPerPage, search = this.cronHistorySearchQuery) {
+        this.cronHistoryLoading = true;
         try {
             const url = new URL('/api/cronhistory', window.location.origin);
             url.searchParams.append('page', page);
@@ -18,8 +19,44 @@ const CronHistoryMethods = {
             this.cronHistoryPage = data.page || page;
             this.cronHistoryPerPage = data.per_page || perPage;
             this.cronHistoryTotal = data.total || 0;
+            if (typeof this.showToast === 'function') {
+                this.showToast('Cron history refreshed!', 'success');
+            }
         } catch (error) {
             console.error('Error fetching cron history:', error);
+            if (typeof this.showToast === 'function') {
+                this.showToast('Failed to refresh cron history.', 'error');
+            }
+        } finally {
+            this.cronHistoryLoading = false;
+        }
+    },
+
+    // Toggle auto-refresh for cron history
+    toggleCronHistoryAutoRefresh() {
+        this.cronHistoryAutoRefresh = !this.cronHistoryAutoRefresh;
+        if (this.cronHistoryAutoRefresh) {
+            this.startCronHistoryAutoRefresh();
+        } else {
+            this.stopCronHistoryAutoRefresh();
+        }
+    },
+
+    // Start auto-refresh interval
+    startCronHistoryAutoRefresh() {
+        // Clear any existing interval first
+        this.stopCronHistoryAutoRefresh();
+        // Refresh every 5 seconds
+        this.cronHistoryAutoRefreshInterval = setInterval(() => {
+            this.fetchCronHistory();
+        }, 5000);
+    },
+
+    // Stop auto-refresh interval
+    stopCronHistoryAutoRefresh() {
+        if (this.cronHistoryAutoRefreshInterval) {
+            clearInterval(this.cronHistoryAutoRefreshInterval);
+            this.cronHistoryAutoRefreshInterval = null;
         }
     },
 

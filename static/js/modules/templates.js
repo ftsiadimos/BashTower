@@ -103,30 +103,32 @@ const TemplatesMethods = {
         this.scriptAIResponse = '';
 
         const existingScript = this.templateForm.script || '';
+        const scriptType = this.templateForm.script_type || 'bash';
         let prompt;
-        
+
+        // Always instruct the AI to be an expert in both Bash and Python scripting
         if (existingScript.trim()) {
-            prompt = `You are an expert bash script developer. The user has an existing bash script and wants to modify or improve it.
+            prompt = `You are an expert in both Bash and Python scripting. The user has an existing ${scriptType} script and wants to modify or improve it.
 
-Existing Script:
-\`\`\`bash
-${existingScript}
-\`\`\`
+    Existing Script:
+    \`\`\`${scriptType}
+    ${existingScript}
+    \`\`\`
 
-User Request: ${this.scriptAIPrompt}
+    User Request: ${this.scriptAIPrompt}
 
-Provide the complete updated bash script. Include helpful comments. Only output the script code, no explanations before or after.`;
+    Provide the complete updated ${scriptType} script. Include helpful comments. Only output the script code, no explanations before or after.`;
         } else {
-            prompt = `You are an expert bash script developer. Create a bash script based on the following requirements:
+            prompt = `You are an expert in both Bash and Python scripting. Create a ${scriptType} script based on the following requirements:
 
-${this.scriptAIPrompt}
+    ${this.scriptAIPrompt}
 
-Provide a complete, production-ready bash script with:
-- Proper error handling
-- Helpful comments
-- Best practices for bash scripting
+    Provide a complete, production-ready ${scriptType} script with:
+    - Proper error handling
+    - Helpful comments
+    - Best practices for ${scriptType} scripting
 
-Only output the script code, no explanations before or after.`;
+    Only output the script code, no explanations before or after.`;
         }
 
         try {

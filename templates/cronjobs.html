@@ -278,8 +278,9 @@
             <!-- Details -->
             <div class="p-4 space-y-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <i class="fas fa-file-code text-blue-600 text-sm"></i>
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        :class="getTemplateById(job.template_id)?.script_type === 'python' ? 'bg-yellow-100' : 'bg-gray-100'">
+                        <i :class="getTemplateById(job.template_id)?.script_type === 'python' ? 'fab fa-python text-yellow-600 text-lg' : 'fas fa-terminal text-gray-600 text-lg'"></i>
                     </div>
                     <div class="min-w-0">
                         <p class="text-xs text-gray-500">Template</p>

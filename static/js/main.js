@@ -62,6 +62,8 @@ const App = {
             editingTemplate: false,
             templateForm: { id: null, name: '', script: '', script_type: 'bash' },
             templateSearchQuery: '',
+            templateDropdownOpen: false,
+            templateDropdownSearch: '',
 
             // --- Host Management ---
             hosts: [],
@@ -89,7 +91,6 @@ const App = {
             activeJob: null,
             jobPollingInterval: null,
             hostSearchQuery: '',
-            templateDropdownOpen: false,
             runForm: {
                 template_id: null,
                 selection_type: 'groups',
@@ -172,7 +173,11 @@ const App = {
                 email: '',
                 password: '',
                 is_admin: false
-            }
+            },
+
+            // --- Job Sorting ---
+            jobSortStatus: 'all', // 'all', 'success', 'error', 'running'
+            logSortStatus: 'all' // 'all', 'success', 'error', 'running'
         };
     },
     
@@ -235,11 +240,9 @@ const App = {
 
         // Filter templates based on search query
         filteredTemplates() {
-            if (!this.templateSearchQuery.trim()) {
-                return this.templates;
-            }
-            const query = this.templateSearchQuery.toLowerCase();
-            return this.templates.filter(t => t.name.toLowerCase().includes(query));
+            if (!this.templateSearchQuery.trim()) return this.templates;
+            const search = this.templateSearchQuery.trim().toLowerCase();
+            return this.templates.filter(t => t.name.toLowerCase().includes(search));
         },
 
         // Filter cron jobs based on search query
@@ -314,6 +317,40 @@ const App = {
                 u.username.toLowerCase().includes(search) ||
                 (u.email && u.email.toLowerCase().includes(search))
             );
+        },
+
+        // Sorted job history based on status
+        sortedJobHistory() {
+            if (this.jobSortStatus === 'all') return this.jobHistory;
+            if (this.jobSortStatus === 'success') {
+                return this.jobHistory.filter(j => ['success', 'complete', 'completed'].includes(j.status));
+            }
+            if (this.jobSortStatus === 'error') {
+                return this.jobHistory.filter(j => ['error', 'failed'].includes(j.status));
+            }
+            if (this.jobSortStatus === 'running') {
+                return this.jobHistory.filter(j => j.status === 'running');
+            }
+            return this.jobHistory;
+        },
+
+        // Sort and filter active job logs
+        sortedActiveJobLogs() {
+            if (!this.activeJob || !this.activeJob.logs) return [];
+            let logs = this.activeJob.logs.slice();
+            // Sort alphabetically by hostname only
+            logs.sort((a, b) => a.hostname.localeCompare(b.hostname));
+            if (this.logSortStatus === 'all') return logs;
+            if (this.logSortStatus === 'success') {
+                return logs.filter(l => ['success', 'complete', 'completed'].includes(l.status));
+            }
+            if (this.logSortStatus === 'error') {
+                return logs.filter(l => ['error', 'failed'].includes(l.status));
+            }
+            if (this.logSortStatus === 'running') {
+                return logs.filter(l => l.status === 'running');
+            }
+            return logs;
         },
     },
 
@@ -585,7 +622,31 @@ const App = {
             if (type === 'error') {
                 alert(message);
             }
-        }
+        },
+
+        getTemplateById(templateId) {
+            return this.templates.find(t => t.id === templateId) || null;
+        },
+
+        ansiToHtml(text) {
+            if (!text) return '';
+            // Basic ANSI color code to HTML span conversion
+            return text
+                .replace(/\u001b\[0m/g, '</span>')
+                .replace(/\u001b\[32m/g, '<span style="color:#22c55e">') // green
+                .replace(/\u001b\[31m/g, '<span style="color:#ef4444">') // red
+                .replace(/\u001b\[33m/g, '<span style="color:#eab308">') // yellow
+                .replace(/\u001b\[34m/g, '<span style="color:#3b82f6">') // blue
+                .replace(/\u001b\[35m/g, '<span style="color:#a21caf">') // magenta
+                .replace(/\u001b\[36m/g, '<span style="color:#06b6d4">') // cyan
+                .replace(/\u001b\[1m/g, '<span style="font-weight:bold">') // bold
+                .replace(/\u001b\[.*?m/g, ''); // remove any other ansi
+        },
+
+        stripAnsi(text) {
+            if (!text) return '';
+            return text.replace(/\u001b\[[0-9;]*m/g, '');
+        },
     }
 };
 

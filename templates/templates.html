@@ -51,7 +51,7 @@
                 <i class="fas fa-code text-green-600"></i>
             </div>
             <div>
-                <p class="text-2xl font-bold text-gray-800">[[ templates.reduce((sum, t) => sum + (t.script ? t.script.split('\\n').length : 0), 0) ]]</p>
+                <p class="text-2xl font-bold text-gray-800">[[ templates.reduce((sum, t) => sum + (t.script ? t.script.replace(/\r\n|\r/g, '\n').replace(/\n+$/,'').split('\n').length : 0), 0) ]]</p>
                 <p class="text-xs text-gray-500">Total Lines</p>
             </div>
         </div>
@@ -152,7 +152,7 @@
                                 </span>
                             </div>
                             <div class="text-xs text-gray-500">
-                                <span>[[ templateForm.script ? templateForm.script.split('\\n').length : 0 ]] lines</span>
+                                <span>[[ templateForm.script ? templateForm.script.replace(/\r\n|\r/g, '\n').replace(/\n+$/, '').split('\n').length : 0 ]] lines</span>
                                 <span class="mx-2">•</span>
                                 <span>[[ templateForm.script ? templateForm.script.length : 0 ]] chars</span>
                             </div>
@@ -160,7 +160,7 @@
                         <textarea v-model="templateForm.script" 
                             :placeholder="templateForm.script_type === 'python' ? '#!/usr/bin/env python3\n\n# Your Python script here...' : '#!/bin/bash\n\n# Your script here...'" 
                             :class="templateForm.script_type === 'python' ? 'bg-slate-900 text-yellow-300' : 'bg-gray-900 text-green-400'"
-                            class="w-full p-4 font-mono text-sm h-72 focus:outline-none resize-none" 
+                            class="w-full p-4 font-mono text-sm h-72 min-h-[16rem] max-h-[40rem] focus:outline-none resize-y" 
                             style="font-family: 'Courier New', Consolas, 'Liberation Mono', monospace;"></textarea>
                     </div>
                 </div>
@@ -260,8 +260,8 @@
             <div class="px-4 py-3 bg-gray-50 border-t border-b border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-4 text-xs text-gray-500">
                     <span class="flex items-center gap-1">
-                        <i class="fas fa-code" :class="t.script_type === 'python' ? 'text-yellow-500' : 'text-blue-500'"></i>
-                        [[ t.script ? t.script.split('\\n').length : 0 ]] lines
+                            <i class="fas fa-code" :class="t.script_type === 'python' ? 'text-yellow-500' : 'text-blue-500'"></i>
+                            [[ t.script ? t.script.replace(/\r\n|\r/g, '\n').replace(/\n+$/,'').split('\n').length : 0 ]] lines
                     </span>
                     <span class="flex items-center gap-1">
                         <i class="fas fa-text-width text-purple-500"></i>
