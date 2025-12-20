@@ -5,7 +5,7 @@
 # ============================================================================
 
 import logging
-import requests
+import requests # type: ignore
 from flask import Blueprint, jsonify, request
 
 from extensions import db

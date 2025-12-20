@@ -4,7 +4,7 @@
 # API endpoints for application settings including AI configuration.
 # ============================================================================
 
-import requests
+import requests # type: ignore
 from flask import Blueprint, request, jsonify
 from extensions import db
 from models import AppSettings, CronJobLog
