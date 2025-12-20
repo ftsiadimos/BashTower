@@ -268,9 +268,9 @@
                         [[ t.script ? t.script.length : 0 ]] chars
                     </span>
                 </div>
-                <span v-if="t.script && ((t.script_type === 'python' && t.script.includes('#!/usr/bin/env python')) || (t.script_type !== 'python' && t.script.includes('#!/bin/bash')))" 
-                    class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                    <i class="fas fa-check-circle mr-1"></i>Valid
+                <span v-if="t.script && (t.script_type === 'python' || t.script.includes('#!/usr/bin/env python') || t.script.includes('#!/usr/bin/python'))"
+                    class="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+                    <i class="fab fa-python"></i> Python
                 </span>
                 <span v-else class="text-xs px-2 py-0.5 rounded-full"
                     :class="t.script_type === 'python' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'">

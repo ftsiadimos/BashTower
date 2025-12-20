@@ -13,15 +13,67 @@
     <style>
         /* Prevents the template from showing before Vue is ready */
         [v-cloak] { display: none; }
+        /* Full-page loading overlay shown on initial load/refresh */
+        #page-loading-overlay{
+            position:fixed;
+            inset:0;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background:#f3f4f6; /* solid white background */
+            color:#111827; /* dark text */
+            z-index:9999;
+            transition:opacity .25s ease,visibility .25s ease;
+        }
+
+        /* subtle tower watermark behind the loader */
+        #page-loading-overlay::before{
+            content: "";
+            position:absolute;
+            inset:0;
+            background-image: url("{{ url_for('static', filename='img/BashTower.png') }}");
+            background-repeat: no-repeat;
+            background-position: center 50%;
+            background-size: 30%; /* larger watermark */
+            opacity: 0.99; /* brighter */
+            pointer-events: none;
+            z-index: 0;
+            background-blend-mode: normal;
+        }
+        #page-loading-overlay.hidden{
+            opacity:0;
+            visibility:hidden;
+            pointer-events:none;
+        }
+        .loader-ring{
+            width:196px; /* larger spinner */
+            height:196px;
+            border:10px solid rgba(17,24,39,0.06); /* subtle ring */
+            border-top-color:#6d7774; /* orange spinner */
+            border-radius:50%;
+            animation:spin 1s linear infinite;
+            margin-right:1px;
+        }
+        @keyframes spin{to{transform:rotate(360deg)}}
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 h-screen overflow-hidden">
-    
+    <!-- Loading overlay (visible immediately on refresh) -->
+    <div id="page-loading-overlay">
+        <div class="flex items-center relative z-10">
+            <div class="loader-ring" aria-hidden="true"></div>
+      
+        </div>
+    </div>
+
     <div id="app" class="flex h-full" v-cloak>
         <!-- Sidebar Navigation -->
         <div class="w-64 bg-slate-800 text-white flex flex-col">
             <div class="p-4 text-2xl font-bold border-b border-slate-700">
-                <i class="fas fa-tower-broadcast mr-2"></i>Bash Tower
+                <a href="#" onclick="location.reload();" class="flex items-center text-white no-underline">
+                    <i class="fas fa-tower-broadcast mr-2"></i>
+                    <span>Bash Tower</span>
+                </a>
             </div>
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <!-- Navigation Buttons -->
@@ -134,5 +186,31 @@
     
     <!-- Main Application Entry Point -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        (function(){
+            const overlay = document.getElementById('page-loading-overlay');
+            if(!overlay) return;
+            const minMs = 300; // keep overlay visible at least this long (300ms < 1s)
+            const start = Date.now();
+
+            function hideOverlay(){
+                const elapsed = Date.now() - start;
+                const wait = Math.max(0, minMs - elapsed);
+                setTimeout(()=>{
+                    overlay.classList.add('hidden');
+                    // remove from DOM after transition
+                    setTimeout(()=>{ if(overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 300);
+                }, wait);
+            }
+
+            if(document.readyState === 'complete'){
+                hideOverlay();
+            } else {
+                window.addEventListener('load', hideOverlay);
+                // in case load doesn't fire, ensure we hide after a reasonable timeout
+                setTimeout(hideOverlay, 5000);
+            }
+        })();
+    </script>
 </body>
 </html>
