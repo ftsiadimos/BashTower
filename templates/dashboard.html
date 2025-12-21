@@ -1,4 +1,4 @@
-<div class="max-w-7xl mx-auto" @click="templateDropdownOpen = false">
+<div class="max-w-7xl mx-auto" @click="closeTemplateDropdown()">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
@@ -44,7 +44,7 @@
                         </label>
                         <!-- Custom Template Dropdown with Icons -->
                         <div class="relative" @click.stop>
-                            <button type="button" @click="templateDropdownOpen = !templateDropdownOpen" 
+                            <button type="button" @click="toggleTemplateDropdown()" 
                                 class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition bg-white text-left flex items-center justify-between">
                                 <span v-if="!runForm.template_id" class="text-gray-500">Select a template...</span>
                                 <span v-else class="flex items-center gap-2">
@@ -58,9 +58,9 @@
                                 <div class="px-3 py-2 border-b border-gray-200 bg-gray-50">
                                     <input v-model="templateDropdownSearch" type="text" placeholder="Search templates..." class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-green-500" />
                                 </div>
-                                <div v-if="filteredTemplates.length === 0" class="px-4 py-3 text-gray-500 text-sm">No templates found</div>
-                                <button v-for="t in filteredTemplates" :key="t.id" type="button"
-                                    @click="runForm.template_id = t.id; templateDropdownOpen = false"
+                                <div v-if="filteredTemplatesDropdown.length === 0" class="px-4 py-3 text-gray-500 text-sm">No templates found</div>
+                                <button v-for="t in filteredTemplatesDropdown" :key="t.id" type="button"
+                                    @click="selectTemplateFromDropdown(t.id)"
                                     :class="[
                                         'w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-gray-50 transition',
                                         runForm.template_id === t.id ? 'bg-green-50' : ''
@@ -187,10 +187,10 @@
 
             <!-- Launch Button Footer -->
             <div class="px-5 py-4 bg-gray-50 border-t border-gray-100">
-                <button @click="runJob" :disabled="isRunning || selectedHostCount === 0" 
+                <button @click="runJob" :disabled="launchPending || lastLaunchedJobRunning || selectedHostCount === 0" 
                     class="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold flex items-center justify-center gap-2 shadow-md">
-                    <i :class="isRunning ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
-                    [[ isRunning ? 'Executing...' : 'Launch Script' ]]
+                    <i :class="lastLaunchedJobRunning ? 'fas fa-spinner fa-spin' : 'fas fa-play'"></i>
+                    [[ lastLaunchedJobRunning ? 'Executing...' : (launchPending ? 'Launching...' : 'Launch Script') ]]
                 </button>
             </div>
         </div>

@@ -1,5 +1,33 @@
 // Group Management Module
-// Methods for managing host groups
+// Methods, data and computed for managing host groups
+
+const GroupsData = () => ({
+    groups: [],
+    editingGroup: false,
+    groupForm: { id: null, name: '', host_ids: [] },
+    groupSearchQuery: '',
+    groupPageSearchQuery: ''
+});
+
+const GroupsComputed = {
+    // Filter groups based on search query
+    filteredGroups() {
+        if (!this.groupSearchQuery.trim()) {
+            return this.groups;
+        }
+        const query = this.groupSearchQuery.toLowerCase();
+        return this.groups.filter(g => g.name.toLowerCase().includes(query));
+    },
+
+    // Filter groups for groups page (separate from dashboard filter)
+    filteredGroupsPage() {
+        if (!this.groupPageSearchQuery.trim()) {
+            return this.groups;
+        }
+        const query = this.groupPageSearchQuery.toLowerCase();
+        return this.groups.filter(g => g.name.toLowerCase().includes(query));
+    }
+};
 
 const GroupsMethods = {
     // Fetch all groups from API
@@ -7,6 +35,7 @@ const GroupsMethods = {
         const response = await fetch(API.GROUPS);
         this.groups = await response.json();
     },
+
 
     // Get group name by ID (helper)
     getGroupName(id) {

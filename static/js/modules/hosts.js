@@ -1,6 +1,41 @@
 // Host Management Module
-// Methods for managing remote hosts
+// Methods, data and computed for managing remote hosts
 
+const HostsData = () => ({
+    hosts: [],
+    hostForm: { id: null, name: '', hostname: '', username: '', port: 22 },
+    hostPageSearchQuery: '',
+    showHostModal: false,
+    editingHost: null
+});
+
+const HostsComputed = {
+    filteredHosts() {
+        if (!this.hostSearchQuery.trim()) {
+            return this.hosts;
+        }
+        const query = this.hostSearchQuery.toLowerCase();
+        return this.hosts.filter(h => 
+            h.name.toLowerCase().includes(query) || 
+            h.hostname.toLowerCase().includes(query)
+        );
+    },
+
+    // Filter hosts for hosts page (separate from dashboard filter)
+    filteredHostsPage() {
+        if (!this.hostPageSearchQuery.trim()) {
+            return this.hosts;
+        }
+        const query = this.hostPageSearchQuery.toLowerCase();
+        return this.hosts.filter(h => 
+            h.name.toLowerCase().includes(query) || 
+            h.hostname.toLowerCase().includes(query) ||
+            h.username.toLowerCase().includes(query)
+        );
+    }
+};
+
+// Methods
 const HostsMethods = {
     // Fetch all hosts from API
     async fetchHosts() {

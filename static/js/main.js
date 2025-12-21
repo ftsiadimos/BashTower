@@ -57,36 +57,22 @@ const App = {
             // --- Page Visibility ---
             isPageVisible: true,
             
-            // --- Template Management ---
-            templates: [],
-            editingTemplate: false,
-            templateForm: { id: null, name: '', script: '', script_type: 'bash' },
-            templateSearchQuery: '',
-            templateDropdownOpen: false,
-            templateDropdownSearch: '',
+            // --- Template Management (moved to module)
+            ...TemplatesData(),
 
-            // --- Host Management ---
-            hosts: [],
-            hostForm: { id: null, name: '', hostname: '', username: '', port: 22 },
-            hostPageSearchQuery: '',
-            showHostModal: false,
-            editingHost: null,
+            // --- Host Management (moved to module)
+            ...HostsData(),
 
-            // --- Key Management ---
-            keys: [],
-            keyForm: { name: '', private_key: '' },
-            showKeyModal: false,
-            keySearchQuery: '',
+            // --- Key Management (moved to module)
+            ...KeysData(),
 
-            // --- Group Management ---
-            groups: [],
-            editingGroup: false,
-            groupForm: { id: null, name: '', host_ids: [] },
-            groupSearchQuery: '',
-            groupPageSearchQuery: '',
+            // --- Group Management (moved to module)
+            ...GroupsData(),
 
             // --- Job Runner ---
             isRunning: false,
+            launchPending: false, // true while creating a job on the server
+            lastLaunchedJobId: null, // ID of the most recently launched job
             jobHistory: [],
             activeJob: null,
             jobPollingInterval: null,
@@ -102,10 +88,7 @@ const App = {
             // --- AI Troubleshooter ---
             llmLoading: false,
 
-            // --- AI Script Assistant ---
-            scriptAIPrompt: '',
-            scriptAIResponse: '',
-            scriptAILoading: false,
+            // --- AI Script Assistant (moved to Templates module)
 
             // --- Satellite Sync ---
             satelliteConfig: { url: '', username: '', ssh_username: 'ec2-user' },
@@ -148,7 +131,6 @@ const App = {
                 ai_endpoint: '',
                 cron_history_limit: 0
             },
-            aiConfigured: false,
             settingsSaving: false,
             settingsMessage: '',
             ollamaModels: [],
@@ -158,22 +140,8 @@ const App = {
             showDeleteCronHistoryModal: false,
             deletingCronHistory: false,
 
-            // --- User Management ---
-            currentUser: null,
-            users: [],
-            userSearch: '',
-            showUserModal: false,
-            showDeleteModal: false,
-            editingUser: null,
-            userToDelete: null,
-            userFormLoading: false,
-            showModalPassword: false,
-            userForm: {
-                username: '',
-                email: '',
-                password: '',
-                is_admin: false
-            },
+            // --- User Management (moved to module)
+            ...UsersData(),
 
             // --- Job Sorting ---
             jobSortStatus: 'all', // 'all', 'success', 'error', 'running'
@@ -217,33 +185,14 @@ const App = {
             return selectedHostIds.size;
         },
 
-        // Filter hosts based on search query
-        filteredHosts() {
-            if (!this.hostSearchQuery.trim()) {
-                return this.hosts;
-            }
-            const query = this.hostSearchQuery.toLowerCase();
-            return this.hosts.filter(h => 
-                h.name.toLowerCase().includes(query) || 
-                h.hostname.toLowerCase().includes(query)
-            );
-        },
+        // Host computed properties (moved to module)
+        ...HostsComputed,
 
-        // Filter groups based on search query
-        filteredGroups() {
-            if (!this.groupSearchQuery.trim()) {
-                return this.groups;
-            }
-            const query = this.groupSearchQuery.toLowerCase();
-            return this.groups.filter(g => g.name.toLowerCase().includes(query));
-        },
+        // Group computed properties (moved to module)
+        ...GroupsComputed,
 
-        // Filter templates based on search query
-        filteredTemplates() {
-            if (!this.templateSearchQuery.trim()) return this.templates;
-            const search = this.templateSearchQuery.trim().toLowerCase();
-            return this.templates.filter(t => t.name.toLowerCase().includes(search));
-        },
+        // Template computed properties (moved to module)
+        ...TemplatesComputed,
 
         // Filter cron jobs based on search query
         filteredCronJobs() {
@@ -257,27 +206,7 @@ const App = {
             );
         },
 
-        // Filter hosts for hosts page (separate from dashboard filter)
-        filteredHostsPage() {
-            if (!this.hostPageSearchQuery.trim()) {
-                return this.hosts;
-            }
-            const query = this.hostPageSearchQuery.toLowerCase();
-            return this.hosts.filter(h => 
-                h.name.toLowerCase().includes(query) || 
-                h.hostname.toLowerCase().includes(query) ||
-                h.username.toLowerCase().includes(query)
-            );
-        },
 
-        // Filter groups for groups page (separate from dashboard filter)
-        filteredGroupsPage() {
-            if (!this.groupPageSearchQuery.trim()) {
-                return this.groups;
-            }
-            const query = this.groupPageSearchQuery.toLowerCase();
-            return this.groups.filter(g => g.name.toLowerCase().includes(query));
-        },
 
         // Filter hosts for cron job form
         filteredCronHosts() {
@@ -300,24 +229,11 @@ const App = {
             return this.groups.filter(g => g.name.toLowerCase().includes(query));
         },
 
-        // Filter keys based on search query
-        filteredKeys() {
-            if (!this.keySearchQuery || !this.keySearchQuery.trim()) {
-                return this.keys;
-            }
-            const query = this.keySearchQuery.toLowerCase();
-            return this.keys.filter(k => k.name.toLowerCase().includes(query));
-        },
+        // Key computed properties (moved to module)
+        ...KeysComputed,
 
-        // Filter users based on search query
-        filteredUsers() {
-            if (!this.userSearch) return this.users;
-            const search = this.userSearch.toLowerCase();
-            return this.users.filter(u => 
-                u.username.toLowerCase().includes(search) ||
-                (u.email && u.email.toLowerCase().includes(search))
-            );
-        },
+        // User computed properties (moved to module)
+        ...usersComputed,
 
         // Sorted job history based on status
         sortedJobHistory() {
@@ -352,6 +268,15 @@ const App = {
             }
             return logs;
         },
+
+        // Whether the most recently launched job is still running
+        lastLaunchedJobRunning() {
+            if (!this.lastLaunchedJobId) return false;
+            const jobInHistory = this.jobHistory.find(j => j.id === this.lastLaunchedJobId);
+            if (jobInHistory) return jobInHistory.status === 'running' || jobInHistory.status === 'started';
+            if (this.activeJob && this.activeJob.id === this.lastLaunchedJobId) return this.activeJob.status === 'running' || this.activeJob.status === 'started';
+            return false;
+        },
     },
 
     // ========================================================================
@@ -366,16 +291,46 @@ const App = {
         
         // Setup smart polling with Page Visibility API
         this.setupSmartPolling();
+
+        // Global keydown handler (Escape to close dropdown)
+        this.handleGlobalKeydown = (event) => {
+            if (event.key === 'Escape' && this.templateDropdownOpen) {
+                this.closeTemplateDropdown();
+            }
+        };
+        document.addEventListener('keydown', this.handleGlobalKeydown);
         
-        // Watch for view changes to lazy load data
+        // Watch for view changes to lazy load data and close dropdown
         this.$watch('currentView', (newView) => {
             this.loadViewData(newView);
+            // Close the template dropdown when switching views
+            if (this.templateDropdownOpen) this.closeTemplateDropdown();
         });
+
+        // Watch job history to clear lastLaunchedJobId when it completes
+        this.$watch('jobHistory', (newHistory) => {
+            if (!this.lastLaunchedJobId) return;
+            const job = newHistory.find(j => j.id === this.lastLaunchedJobId);
+            if (job && job.status && job.status !== 'running' && job.status !== 'started') {
+                // Job finished, clear tracking id
+                this.lastLaunchedJobId = null;
+            }
+        }, { deep: true });
+
+        // Also watch the activeJob detail view for completion
+        this.$watch('activeJob', (newJob) => {
+            if (!this.lastLaunchedJobId || !newJob) return;
+            if (newJob.id === this.lastLaunchedJobId && newJob.status && newJob.status !== 'running' && newJob.status !== 'started') {
+                this.lastLaunchedJobId = null;
+            }
+        }, { deep: true });
     },
 
     unmounted() {
         this.cleanupPolling();
         document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+        // Remove global keydown handler
+        document.removeEventListener('keydown', this.handleGlobalKeydown);
     },
 
     // ========================================================================
@@ -390,6 +345,10 @@ const App = {
             this.handleVisibilityChange = () => {
                 this.isPageVisible = !document.hidden;
                 this.updatePollingIntervals();
+                // Close template dropdown when switching browser tabs (page hidden)
+                if (document.hidden && this.templateDropdownOpen) {
+                    this.closeTemplateDropdown();
+                }
             };
             document.addEventListener('visibilitychange', this.handleVisibilityChange);
             

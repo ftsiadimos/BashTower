@@ -1,4 +1,23 @@
 // Users management module
+
+const UsersData = () => ({
+    currentUser: null,
+    users: [],
+    userSearch: '',
+    showUserModal: false,
+    showDeleteModal: false,
+    editingUser: null,
+    userToDelete: null,
+    userFormLoading: false,
+    showModalPassword: false,
+    userForm: {
+        username: '',
+        email: '',
+        password: '',
+        is_admin: false
+    }
+});
+
 const usersMethods = {
     async fetchUsers() {
         try {

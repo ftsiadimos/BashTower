@@ -1,5 +1,38 @@
 // Template Management Module
-// Methods for managing script templates
+// Methods and reactive state for managing script templates
+
+// Data fields related to templates
+const TemplatesData = () => ({
+    templates: [],
+    editingTemplate: false,
+    templateForm: { id: null, name: '', script: '', script_type: 'bash' },
+    templateSearchQuery: '',
+    templateDropdownOpen: false,
+    templateDropdownSearch: '',
+
+    // AI Script Assistant state
+    scriptAIPrompt: '',
+    scriptAIResponse: '',
+    scriptAILoading: false,
+    aiConfigured: false
+});
+
+// Computed properties related to templates
+const TemplatesComputed = {
+    // Page templates list (uses page search only)
+    filteredTemplates() {
+        const query = (this.templateSearchQuery || '').trim().toLowerCase();
+        if (!query) return this.templates;
+        return this.templates.filter(t => t.name.toLowerCase().includes(query));
+    },
+
+    // Dropdown templates list (uses dropdown search only, independent of page search)
+    filteredTemplatesDropdown() {
+        const query = (this.templateDropdownSearch || '').trim().toLowerCase();
+        if (!query) return this.templates;
+        return this.templates.filter(t => t.name.toLowerCase().includes(query));
+    }
+};
 
 const TemplatesMethods = {
     // Fetch all templates from API
@@ -82,6 +115,27 @@ const TemplatesMethods = {
     getTemplateNameById(templateId) {
         const template = this.templates.find(t => t.id === templateId);
         return template ? template.name : 'Unknown Template';
+    },
+
+    // Toggle the dropdown open/closed; clear dropdown search when closing
+    toggleTemplateDropdown() {
+        this.templateDropdownOpen = !this.templateDropdownOpen;
+        if (!this.templateDropdownOpen) {
+            this.templateDropdownSearch = '';
+        }
+    },
+
+    // Close dropdown and clear the search
+    closeTemplateDropdown() {
+        this.templateDropdownOpen = false;
+        this.templateDropdownSearch = '';
+    },
+
+    // Select a template from the dropdown and close it (clears search)
+    selectTemplateFromDropdown(id) {
+        this.runForm.template_id = id;
+        this.templateDropdownOpen = false;
+        this.templateDropdownSearch = '';
     },
 
     // AI Script Assistant - Generate or improve bash script

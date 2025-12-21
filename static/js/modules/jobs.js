@@ -94,24 +94,32 @@ const JobsMethods = {
             payload.host_group_ids = this.runForm.group_ids;
         }
 
-        this.isRunning = true;
+        // Mark that we are creating a job and clear previous active job
+        this.launchPending = true;
         this.activeJob = null;
-        
-        const response = await fetch(API.RUNNER, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
 
-        if (response.ok) {
-            const result = await response.json();
-            this.viewJob(result.id);
-            this.fetchJobHistory();
-        } else {
-             const error = await response.json();
-             alert(`Job Submission Error: ${error.error || 'Unknown error'}`);
-        }
-        this.isRunning = false; 
+        try {
+            const response = await fetch(API.RUNNER, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                // Record the launched job ID and fetch its details/history
+                this.lastLaunchedJobId = result.id;
+                this.viewJob(result.id);
+                this.fetchJobHistory();
+            } else {
+                const error = await response.json();
+                alert(`Job Submission Error: ${error.error || 'Unknown error'}`);
+            }
+        } catch (err) {
+            alert(`Network error: ${err.message}`);
+        } finally {
+            this.launchPending = false;
+        } 
     },
 
     // Get status CSS class

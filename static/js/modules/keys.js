@@ -1,5 +1,22 @@
 // Key Management Module
-// Methods for managing SSH keys
+// Methods, data and computed for managing SSH keys
+
+const KeysData = () => ({
+    keys: [],
+    keyForm: { name: '', private_key: '' },
+    showKeyModal: false,
+    keySearchQuery: ''
+});
+
+const KeysComputed = {
+    filteredKeys() {
+        if (!this.keySearchQuery || !this.keySearchQuery.trim()) {
+            return this.keys;
+        }
+        const query = this.keySearchQuery.toLowerCase();
+        return this.keys.filter(k => k.name.toLowerCase().includes(query));
+    }
+};
 
 const KeysMethods = {
     // Fetch all keys from API
@@ -10,6 +27,7 @@ const KeysMethods = {
             this.runForm.key_id = this.keys[0].id;
         }
     },
+
 
     // Open modal to add a new key
     openKeyModal() {
