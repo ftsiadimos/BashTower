@@ -10,11 +10,19 @@ const TemplatesData = () => ({
     templateDropdownOpen: false,
     templateDropdownSearch: '',
 
+    // Preview modal for easier reading of scripts
+    previewTemplate: null,
+    previewOpen: false,
+
     // AI Script Assistant state
     scriptAIPrompt: '',
     scriptAIResponse: '',
     scriptAILoading: false,
-    aiConfigured: false
+    aiConfigured: false,
+
+    // Editor/UI expand states
+    templateEditorExpanded: false,
+    scriptAIExpanded: false
 });
 
 // Computed properties related to templates
@@ -115,6 +123,37 @@ const TemplatesMethods = {
     getTemplateNameById(templateId) {
         const template = this.templates.find(t => t.id === templateId);
         return template ? template.name : 'Unknown Template';
+    },
+
+    // Open a read-only preview modal for the given template (easier reading)
+    openPreview(template) {
+        this.previewTemplate = template;
+        this.previewOpen = true;
+        // wait for DOM update then highlight
+        this.$nextTick(() => {
+            const codeEl = document.querySelector('#template-preview pre code');
+            if (codeEl) highlightCodeBlock(codeEl);
+        });
+    },
+
+    closePreview() {
+        this.previewOpen = false;
+        this.previewTemplate = null;
+    },
+
+    // Copy script to clipboard from preview
+    async copyScriptFromPreview() {
+        if (!this.previewTemplate || !this.previewTemplate.script) return;
+        try {
+            await navigator.clipboard.writeText(this.previewTemplate.script);
+            const fb = document.createElement('div');
+            fb.textContent = 'Script copied to clipboard';
+            fb.className = 'fixed bottom-4 right-4 bg-slate-800 text-white text-xs px-3 py-2 rounded shadow';
+            document.body.appendChild(fb);
+            setTimeout(() => fb.remove(), 1500);
+        } catch (e) {
+            console.error('copy failed', e);
+        }
     },
 
     // Toggle the dropdown open/closed; clear dropdown search when closing
@@ -221,5 +260,24 @@ const TemplatesMethods = {
     // Clear AI response
     clearAIResponse() {
         this.scriptAIResponse = '';
+    },
+
+    // Toggle the template editor expand/collapse state
+    toggleTemplateEditorExpand() {
+        this.templateEditorExpanded = !this.templateEditorExpanded;
+        // focus textarea after expanding for convenience
+        this.$nextTick(() => {
+            const ta = document.querySelector('textarea[v-model="templateForm.script"]') || document.querySelector('textarea[ v-model="templateForm.script"]');
+            if (ta) ta.focus();
+        });
+    },
+
+    // Toggle AI response expanded state
+    toggleScriptAIExpand() {
+        this.scriptAIExpanded = !this.scriptAIExpanded;
+        this.$nextTick(() => {
+            const pre = document.querySelector('.script-ai-response');
+            if (pre && window.hljs) try { window.hljs.highlightElement(pre.querySelector('code') || pre); } catch(e){}
+        });
     }
 };

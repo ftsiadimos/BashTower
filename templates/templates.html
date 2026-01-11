@@ -151,16 +151,20 @@
                                     [[ templateForm.script_type === 'python' ? 'python3' : 'bash' ]]
                                 </span>
                             </div>
-                            <div class="text-xs text-gray-500">
-                                <span>[[ templateForm.script ? templateForm.script.replace(/\r\n|\r/g, '\n').replace(/\n+$/, '').split('\n').length : 0 ]] lines</span>
-                                <span class="mx-2">•</span>
-                                <span>[[ templateForm.script ? templateForm.script.length : 0 ]] chars</span>
+                            <div class="flex items-center gap-3">
+                                <div class="text-xs text-gray-500">
+                                    <span>[[ templateForm.script ? templateForm.script.replace(/\r\n|\r/g, '\n').replace(/\n+$/, '').split('\n').length : 0 ]] lines</span>
+                                    <span class="mx-2">•</span>
+                                    <span>[[ templateForm.script ? templateForm.script.length : 0 ]] chars</span>
+                                </div>
+                                <button @click="toggleTemplateEditorExpand" class="text-xs px-3 py-1 rounded bg-gray-700/30 hover:bg-gray-700/40 text-white">[[ templateEditorExpanded ? 'Collapse' : 'Expand' ]]</button>
                             </div>
                         </div>
-                        <textarea v-model="templateForm.script" 
-                            :placeholder="templateForm.script_type === 'python' ? '#!/usr/bin/env python3\n\n# Your Python script here...' : '#!/bin/bash\n\n# Your script here...'" 
-                            :class="templateForm.script_type === 'python' ? 'bg-slate-900 text-yellow-300' : 'bg-gray-900 text-green-400'"
-                            class="w-full p-4 font-mono text-sm h-72 min-h-[16rem] max-h-[40rem] focus:outline-none resize-y" 
+                        <textarea v-model="templateForm.script"
+                            spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
+                            :placeholder="templateForm.script_type === 'python' ? '#!/usr/bin/env python3\n\n# Your Python script here...' : '#!/bin/bash\n\n# Your script here...'"
+                            :class="[ templateForm.script_type === 'python' ? 'bg-slate-900 text-yellow-300' : 'bg-gray-900 text-green-400', templateEditorExpanded ? 'min-h-[36rem] max-h-[80vh]' : 'h-72 min-h-[16rem] max-h-[40rem]' ]"
+                            class="w-full p-4 font-mono text-sm focus:outline-none resize-y"
                             style="font-family: 'Courier New', Consolas, 'Liberation Mono', monospace;"></textarea>
                     </div>
                 </div>
@@ -208,10 +212,11 @@
                                     <button @click="clearAIResponse" class="px-3 py-1.5 bg-gray-500 text-white text-xs rounded-lg hover:bg-gray-600 transition font-medium flex items-center gap-1">
                                         <i class="fas fa-times"></i> Dismiss
                                     </button>
+                                    <button @click="toggleScriptAIExpand" class="px-3 py-1.5 bg-gray-200 text-gray-700 text-xs rounded-lg hover:bg-gray-300 transition">[[ scriptAIExpanded ? 'Collapse' : 'Expand' ]]</button>
                                 </div>
                             </div>
-                            <pre :class="templateForm.script_type === 'python' ? 'bg-slate-900 text-yellow-300' : 'bg-gray-900 text-green-400'" 
-                                class="p-4 rounded-lg text-sm overflow-x-auto max-h-48 overflow-y-auto font-mono">[[ scriptAIResponse ]]</pre>
+                            <pre :class="[ templateForm.script_type === 'python' ? 'bg-slate-900 text-yellow-300' : 'bg-gray-900 text-green-400', scriptAIExpanded ? 'max-h-[36rem]' : 'max-h-48', 'script-ai-response' ]" 
+                                class="p-4 rounded-lg text-sm overflow-x-auto overflow-y-auto font-mono" style="resize:vertical;">[[ scriptAIResponse ]]</pre>
                         </div>
                     </div>
                 </div>
@@ -233,6 +238,29 @@
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         <div v-for="t in filteredTemplates" :key="t.id" 
             class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden group">
+
+            <!-- Preview Modal -->
+            <div v-if="previewOpen && previewTemplate && previewTemplate.id === t.id" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4" @click.self="closePreview">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+                    <div class="p-4 flex items-center justify-between bg-gray-800 text-white">
+                        <div class="flex items-center gap-3">
+                            <i class="fab fa-python text-yellow-300" v-if="previewTemplate.script_type === 'python'"></i>
+                            <i class="fas fa-terminal text-white" v-else></i>
+                            <div class="ml-2">
+                                <div class="font-semibold">[[ previewTemplate.name ]]</div>
+                                <div class="text-xs text-gray-300">[[ previewTemplate.script_type ]] • [[ previewTemplate.script ? previewTemplate.script.replace(/\r\n|\r/g,'\n').replace(/\n+$/,'').split('\n').length : 0 ]] lines</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button @click="copyScriptFromPreview" class="px-3 py-1.5 bg-green-600 text-white rounded text-xs">Copy</button>
+                            <button @click="closePreview" class="px-3 py-1.5 bg-white/10 text-white rounded text-xs">Close</button>
+                        </div>
+                    </div>
+                    <div class="p-4 overflow-auto bg-gray-900 text-gray-100">
+                        <pre id="template-preview" class="rounded text-sm"><code :class="'language-' + (previewTemplate.script_type === 'python' ? 'python' : 'bash')" v-text="previewTemplate.script"></code></pre>
+                    </div>
+                </div>
+            </div>
             <!-- Header -->
             <div class="p-4 flex items-center gap-3"
                 :class="t.script_type === 'python' ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-blue-500 to-indigo-600'">
@@ -242,6 +270,10 @@
                 <div class="flex-1 min-w-0">
                     <h4 class="font-bold text-white truncate" :title="t.name">[[ t.name ]]</h4>
                     <span class="text-xs text-white/70 font-mono">[[ t.script_type === 'python' ? 'Python' : 'Bash' ]] • ID: [[ t.id ]]</span>
+                </div>
+                <!-- Preview button aligned to the right of the header (after the ID) -->
+                <div class="ml-4 flex-shrink-0">
+                    <button @click.stop="openPreview(t)" class="text-xs px-3 py-1.5 bg-white/10 text-white rounded hover:bg-white/20 transition">Preview</button>
                 </div>
             </div>
             
@@ -284,9 +316,11 @@
                 <button @click="editTemplate(t)" class="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition text-sm font-medium flex items-center gap-1">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button @click="deleteTemplate(t.id)" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium flex items-center gap-1">
-                    <i class="fas fa-trash-alt"></i> Delete
-                </button>
+                <div class="flex items-center gap-2">
+                    <button @click="deleteTemplate(t.id)" class="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium flex items-center gap-1">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
+                </div>
             </div>
         </div>
 

@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for syntax highlighting of scripts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <style>
         /* Prevents the template from showing before Vue is ready */
         [v-cloak] { display: none; }
@@ -184,6 +187,20 @@
     <script src="{{ url_for('static', filename='js/modules/settings.js') }}"></script>
     <script src="{{ url_for('static', filename='js/modules/users.js') }}"></script>
     
+    <!-- Initialize highlight.js (will highlight dynamic content when needed) -->
+    <script>
+        // Avoid running until hljs is available
+        function highlightCodeBlock(el) {
+            if (window.hljs && el) {
+                try {
+                    window.hljs.highlightElement(el);
+                } catch (e) {
+                    console.warn('Highlight failed', e);
+                }
+            }
+        }
+    </script>
+
     <!-- Main Application Entry Point -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script>

@@ -261,7 +261,7 @@ const App = {
                 return logs.filter(l => ['success', 'complete', 'completed'].includes(l.status));
             }
             if (this.logSortStatus === 'error') {
-                return logs.filter(l => ['error', 'failed'].includes(l.status));
+                return logs.filter(l => ['error', 'failed', 'connection_failed'].includes(l.status));
             }
             if (this.logSortStatus === 'running') {
                 return logs.filter(l => l.status === 'running');

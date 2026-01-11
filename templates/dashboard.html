@@ -285,26 +285,35 @@
 
         <!-- Output Tabs/Logs -->
         <div class="divide-y divide-gray-100">
-            <div class="flex flex-wrap items-center justify-end gap-4 px-4 py-2 bg-gray-50 border-b border-gray-100">
-                <div class="flex items-center gap-2 text-xs">
-                    <span class="flex items-center gap-1 text-green-600 font-semibold">
-                        <i class="fas fa-check-circle"></i>
-                        [[ activeJob && activeJob.logs ? activeJob.logs.filter(l => ['success','complete','completed'].includes(l.status)).length : 0 ]] Succeeded
-                    </span>
-                    <span class="flex items-center gap-1 text-red-600 font-semibold">
-                        <i class="fas fa-times-circle"></i>
-                        [[ activeJob && activeJob.logs ? activeJob.logs.filter(l => ['error','failed'].includes(l.status)).length : 0 ]] Failed
-                    </span>
+            <div class="flex flex-wrap items-center justify-between gap-4 px-4 py-3 bg-gray-50 border-b border-gray-100">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="px-3 py-2 bg-green-50 text-green-700 rounded-lg font-semibold flex items-center gap-3">
+                            <i class="fas fa-check-circle"></i>
+                            <div class="text-sm">[[ activeJob && activeJob.logs ? activeJob.logs.filter(l => ['success','complete','completed'].includes(l.status)).length : 0 ]]</div>
+                            <div class="text-xs text-gray-500">Succeeded</div>
+                        </div>
+
+                        <div class="px-3 py-2 bg-red-50 text-red-700 rounded-lg font-semibold flex items-center gap-3">
+                            <i class="fas fa-times-circle"></i>
+                            <div class="text-sm">[[ activeJob && activeJob.logs ? activeJob.logs.filter(l => ['error','failed','connection_failed'].includes(l.status)).length : 0 ]]</div>
+                            <div class="text-xs text-gray-500">Failed</div>
+                        </div>
+
+
+                    </div>
                 </div>
-                <label class="text-xs text-gray-500 mr-2">Sort by:</label>
-                <select v-model="logSortStatus" class="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
-                    <option value="all">All</opt    on>
-                    <option value="success">Success</option>
-                    <option value="error">Error</option>
-                    <option value="running">Running</option>
-                </select>
+                <div class="flex items-center gap-3">
+                    <label class="text-xs text-gray-500 mr-2">Sort by:</label>
+                    <select v-model="logSortStatus" class="text-xs px-2 py-1 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none">
+                        <option value="all">All</option>
+                        <option value="success">Success</option>
+                        <option value="error">Error</option>
+                        <option value="running">Running</option>
+                    </select>
+                </div>
             </div>
-            <div v-for="log in sortedActiveJobLogs" :key="log.hostname" class="border-l-4" :class="log.status === 'success' ? 'border-l-green-500' : (log.status === 'running' ? 'border-l-yellow-500' : 'border-l-red-500')">
+            <div v-for="log in sortedActiveJobLogs" :key="log.hostname" class="border-l-2 rounded-l-md overflow-hidden transition hover:shadow-sm" :class="log.status === 'success' ? 'border-l-green-500' : (log.status === 'running' ? 'border-l-yellow-500' : 'border-l-red-500')">
                 <!-- Log Header -->
                 <div class="px-4 py-3 bg-gray-50 flex justify-between items-center">
                     <div class="flex items-center gap-3">
@@ -336,30 +345,54 @@
 
                 <!-- Log Output -->
                 <div class="bg-slate-950 p-4 font-mono text-sm overflow-x-auto max-h-64 overflow-y-auto">
+                    <div v-if="log.aiAnalysis || log.aiCommands" class="mb-4 p-4 bg-purple-900/40 border-l-4 border-purple-600 rounded-lg">
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-magic text-purple-300"></i>
+                                <span class="text-purple-200 text-sm font-semibold">AI Analysis</span>
+                                <span v-if="log.aiCommands && log.aiCommands.length" class="ml-2 px-2 py-0.5 text-xs bg-purple-800/40 rounded text-purple-100">[[ log.aiCommands.length ]] cmd(s)</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button v-if="log.aiAnalysis" @click="copyToClipboard(log.aiAnalysis)" class="text-xs px-2 py-1 bg-purple-800/50 text-purple-200 rounded hover:bg-purple-700/60">Copy Summary</button>
+                                <button v-if="log.aiCommands && log.aiCommands.length" @click="copyToClipboard(log.aiCommands.join('\n\n'))" class="text-xs px-2 py-1 bg-purple-800/50 text-purple-200 rounded hover:bg-purple-700/60">Copy Commands</button>
+                            </div>
+                        </div>
+
+                        <div v-if="log.aiCommands && log.aiCommands.length" class="mb-3">
+                            <div class="flex items-center gap-2 mb-2 text-sm font-semibold text-purple-200">
+                                <i class="fas fa-terminal text-purple-300"></i>
+                                <span>Command Recommendations</span>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div v-for="(cmd, idx) in log.aiCommands" :key="idx" class="bg-slate-900 p-3 rounded flex items-start justify-between gap-3">
+                                    <pre class="text-sm text-green-200 whitespace-pre-wrap flex-1 mr-3">[[ cmd ]]</pre>
+                                    <div class="flex flex-col gap-2">
+                                        <button @click="copyToClipboard(cmd)" class="text-xs px-2 py-1 bg-slate-800/60 text-white rounded hover:bg-slate-700">Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-if="log.aiAnalysis" class="text-gray-300 text-sm prose prose-invert prose-sm max-w-none" v-html="renderMarkdown(log.aiAnalysis)"></div>
+                    </div>
                     <div v-if="log.stdout" class="mb-3">
                         <div class="flex items-center gap-2 mb-2">
                             <div class="w-2 h-2 bg-green-500 rounded-full"></div>
                             <span class="text-green-400 text-xs font-semibold">STDOUT</span>
                         </div>
-                        <pre class="text-green-400 whitespace-pre-wrap leading-relaxed">[[ stripAnsi(log.stdout) ]]</pre>
+                        <pre class="bg-slate-900 p-3 rounded text-green-400 whitespace-pre-wrap leading-relaxed" v-html="ansiToHtml(log.stdout)"></pre>
                     </div>
-                    <div v-if="log.stderr">
+                    <div v-if="log.stderr" class="mb-3">
                         <div class="flex items-center gap-2 mb-2">
                             <div class="w-2 h-2 bg-red-500 rounded-full"></div>
                             <span class="text-red-400 text-xs font-semibold">STDERR</span>
                         </div>
-                        <pre class="text-red-400 whitespace-pre-wrap leading-relaxed">[[ stripAnsi(log.stderr) ]]</pre>
+                        <pre class="bg-slate-900 p-3 rounded text-red-400 whitespace-pre-wrap leading-relaxed" v-html="ansiToHtml(log.stderr)"></pre>
                     </div>
                     <div v-if="!log.stdout && !log.stderr" class="text-gray-500 italic">No output captured</div>
                     
-                    <!-- AI Analysis -->
-                    <div v-if="log.aiAnalysis" class="mt-4 p-4 bg-purple-950/50 border border-purple-800 rounded-lg">
-                        <div class="flex items-center gap-2 mb-3">
-                            <i class="fas fa-magic text-purple-400"></i>
-                            <span class="text-purple-300 text-xs font-semibold uppercase">AI Analysis</span>
-                        </div>
-                        <div class="text-gray-300 text-sm prose prose-invert prose-sm max-w-none" v-html="renderMarkdown(log.aiAnalysis)"></div>
-                    </div>
+
                 </div>
             </div>
         </div>
