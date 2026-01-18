@@ -542,7 +542,7 @@ const App = {
         // --------------------------------------------------------------------
         async checkAuth() {
             try {
-                const response = await fetch('/api/auth/check');
+                const response = await fetch('/api/auth/check', { credentials: 'same-origin' });
                 if (response.ok) {
                     const data = await response.json();
                     this.currentUser = data.user;
@@ -556,7 +556,7 @@ const App = {
 
         async logout() {
             try {
-                const response = await fetch('/api/auth/logout', { method: 'POST' });
+                const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
                 if (response.ok) {
                     window.location.href = '/login';
                 }

@@ -26,3 +26,37 @@ textarea {
     overflow-wrap: normal;
     overflow-x: scroll;
 }
+
+/* Highlight.js overrides for black background and brighter colors */
+#template-preview code.hljs {
+    background: #000 !important;
+    padding: 1rem;
+}
+#template-preview .hljs-keyword,
+#template-preview .hljs-selector-tag,
+#template-preview .hljs-tag {
+    color: #ff79c6 !important; /* bright pink */
+}
+#template-preview .hljs-string,
+#template-preview .hljs-attr {
+    color: #50fa7b !important; /* bright green */
+}
+#template-preview .hljs-number,
+#template-preview .hljs-literal {
+    color: #bd93f9 !important; /* bright purple */
+}
+#template-preview .hljs-built_in,
+#template-preview .hljs-builtin-name {
+    color: #8be9fd !important; /* bright cyan */
+}
+#template-preview .hljs-function,
+#template-preview .hljs-title {
+    color: #ffb86c !important; /* bright orange */
+}
+#template-preview .hljs-variable,
+#template-preview .hljs-params {
+    color: #f8f8f2 !important; /* white */
+}
+#template-preview .hljs-comment {
+    color: #6272a4 !important; /* muted blue-gray */
+}

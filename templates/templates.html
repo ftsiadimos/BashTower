@@ -252,12 +252,12 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <button @click="copyScriptFromPreview" class="px-3 py-1.5 bg-green-600 text-white rounded text-xs">Copy</button>
-                            <button @click="closePreview" class="px-3 py-1.5 bg-white/10 text-white rounded text-xs">Close</button>
+                            <button @click.stop="copyScriptFromPreview" class="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition">Copy</button>
+                            <button @click.stop="closePreview" class="px-3 py-1.5 bg-white/10 text-white rounded text-xs hover:bg-white/20 transition">Close</button>
                         </div>
                     </div>
-                    <div class="p-4 overflow-auto bg-gray-900 text-gray-100">
-                        <pre id="template-preview" class="rounded text-sm"><code :class="'language-' + (previewTemplate.script_type === 'python' ? 'python' : 'bash')" v-text="previewTemplate.script"></code></pre>
+                    <div class="p-4 overflow-auto bg-black text-gray-100">
+                        <pre id="template-preview" class="rounded text-sm bg-black"><code :class="'language-' + (previewTemplate.script_type === 'python' ? 'python' : 'bash')" v-text="previewTemplate.script"></code></pre>
                     </div>
                 </div>
             </div>

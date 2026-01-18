@@ -8,6 +8,7 @@
 import os
 import atexit
 import logging
+from datetime import timedelta
 from flask import Flask, render_template, redirect, url_for, session
 from extensions import db, scheduler
 from services.cron_service import load_cron_jobs_into_scheduler
@@ -37,6 +38,8 @@ def setup_logging(app):
 def create_app():
     """Application factory for creating the Flask app."""
     app = Flask(__name__)
+    # Use Flask permanent sessions when requested (e.g., 'Remember me')
+    app.permanent_session_lifetime = timedelta(days=30)
     
     # Configuration from environment variables with defaults
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(

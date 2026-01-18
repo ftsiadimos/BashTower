@@ -131,8 +131,11 @@ const TemplatesMethods = {
         this.previewOpen = true;
         // wait for DOM update then highlight
         this.$nextTick(() => {
-            const codeEl = document.querySelector('#template-preview pre code');
-            if (codeEl) highlightCodeBlock(codeEl);
+            const codeEl = document.querySelector('#template-preview code');
+            if (codeEl && window.hljs) {
+                codeEl.removeAttribute('data-highlighted');
+                window.hljs.highlightElement(codeEl);
+            }
         });
     },
 
@@ -143,16 +146,38 @@ const TemplatesMethods = {
 
     // Copy script to clipboard from preview
     async copyScriptFromPreview() {
-        if (!this.previewTemplate || !this.previewTemplate.script) return;
+        console.log('copyScriptFromPreview called', this.previewTemplate);
+        if (!this.previewTemplate || !this.previewTemplate.script) {
+            alert('No script to copy');
+            return;
+        }
+        
+        const text = this.previewTemplate.script;
+        
+        // Try modern clipboard API first, fallback to older method
         try {
-            await navigator.clipboard.writeText(this.previewTemplate.script);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                // Fallback for non-HTTPS or older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            
             const fb = document.createElement('div');
             fb.textContent = 'Script copied to clipboard';
-            fb.className = 'fixed bottom-4 right-4 bg-slate-800 text-white text-xs px-3 py-2 rounded shadow';
+            fb.className = 'fixed bottom-4 right-4 bg-green-600 text-white text-xs px-3 py-2 rounded shadow z-50';
             document.body.appendChild(fb);
             setTimeout(() => fb.remove(), 1500);
         } catch (e) {
-            console.error('copy failed', e);
+            console.error('copy failed:', e);
+            alert('Failed to copy script: ' + e.message);
         }
     },
 
