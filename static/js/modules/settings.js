@@ -13,6 +13,7 @@ const SettingsMethods = {
             this.settingsForm.ai_model = data.ai_model || 'gpt-3.5-turbo';
             this.settingsForm.ai_endpoint = data.ai_endpoint || '';
             this.settingsForm.cron_history_limit = data.cron_history_limit || 0;
+            this.settingsForm.auth_disabled = data.auth_disabled || false;
             this.aiConfigured = data.ai_configured || false;
             
             // Fetch cron history count

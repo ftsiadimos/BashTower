@@ -88,14 +88,19 @@ def create_app():
     # Login route
     @app.route('/login')
     def login_page():
+        from routes.auth import is_auth_disabled
+        # If auth is disabled, skip login and go to main app
+        if is_auth_disabled():
+            return redirect(url_for('index'))
         if 'user_id' in session:
             return redirect(url_for('index'))
         return render_template('login.html')
     
-    # Main route - requires authentication
+    # Main route - requires authentication (unless disabled)
     @app.route('/')
     def index():
-        if 'user_id' not in session:
+        from routes.auth import is_auth_disabled
+        if not is_auth_disabled() and 'user_id' not in session:
             return redirect(url_for('login_page'))
         return render_template('index.html')
     

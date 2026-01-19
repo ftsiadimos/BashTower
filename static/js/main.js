@@ -129,7 +129,8 @@ const App = {
                 ai_api_key: '',
                 ai_model: 'gpt-3.5-turbo',
                 ai_endpoint: '',
-                cron_history_limit: 0
+                cron_history_limit: 0,
+                auth_disabled: false
             },
             settingsSaving: false,
             settingsMessage: '',
@@ -139,6 +140,10 @@ const App = {
             cronHistoryCount: 0,
             showDeleteCronHistoryModal: false,
             deletingCronHistory: false,
+
+            // --- Authentication ---
+            currentUser: null,
+            authDisabled: false,
 
             // --- User Management (moved to module)
             ...UsersData(),
@@ -546,7 +551,18 @@ const App = {
                 if (response.ok) {
                     const data = await response.json();
                     this.currentUser = data.user;
+                    this.authDisabled = data.auth_disabled || false;
                 } else {
+                    // Check if auth is disabled before redirecting
+                    const settingsResp = await fetch('/api/settings');
+                    if (settingsResp.ok) {
+                        const settings = await settingsResp.json();
+                        this.authDisabled = settings.auth_disabled || false;
+                        if (this.authDisabled) {
+                            // Auth is disabled, no need to redirect
+                            return;
+                        }
+                    }
                     window.location.href = '/login';
                 }
             } catch (error) {
@@ -555,6 +571,10 @@ const App = {
         },
 
         async logout() {
+            // Don't logout if auth is disabled
+            if (this.authDisabled) {
+                return;
+            }
             try {
                 const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
                 if (response.ok) {

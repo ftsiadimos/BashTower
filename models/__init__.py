@@ -167,6 +167,8 @@ class AppSettings(db.Model):
     ai_endpoint = db.Column(db.String(255), nullable=True)  # For custom endpoints like Ollama
     # Cron history settings
     cron_history_limit = db.Column(db.Integer, default=0)  # 0 = unlimited, otherwise max rows to keep
+    # Authentication settings
+    auth_disabled = db.Column(db.Boolean, default=False)  # When True, skip login requirement
     
     @property
     def ai_api_key(self):

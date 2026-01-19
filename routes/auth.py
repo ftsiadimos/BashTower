@@ -9,15 +9,27 @@ from functools import wraps
 from flask import Blueprint, request, jsonify, session, redirect, url_for
 
 from extensions import db
-from models import User
+from models import User, AppSettings
 
 auth_bp = Blueprint('auth', __name__)
+
+
+def is_auth_disabled():
+    """Check if authentication is disabled in settings."""
+    try:
+        settings = AppSettings.query.get(1)
+        return settings and settings.auth_disabled
+    except:
+        return False
 
 
 def login_required(f):
     """Decorator to require authentication for routes."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Skip auth check if authentication is disabled
+        if is_auth_disabled():
+            return f(*args, **kwargs)
         if 'user_id' not in session:
             # For API calls, return JSON error
             if request.is_json or request.path.startswith('/api/'):
@@ -32,6 +44,9 @@ def admin_required(f):
     """Decorator to require admin privileges."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Skip auth check if authentication is disabled
+        if is_auth_disabled():
+            return f(*args, **kwargs)
         if 'user_id' not in session:
             return jsonify({'error': 'Authentication required'}), 401
         user = User.query.get(session['user_id'])
@@ -45,6 +60,9 @@ def admin_required(f):
 def login_page():
     """Serve the login page."""
     from flask import render_template
+    # If auth is disabled, skip login and go to main app
+    if is_auth_disabled():
+        return redirect(url_for('index'))
     # If already logged in, redirect to main app
     if 'user_id' in session:
         return redirect(url_for('index'))
@@ -91,14 +109,26 @@ def logout():
 @auth_bp.route('/api/auth/check', methods=['GET'])
 def check_auth():
     """Check if user is authenticated."""
+    auth_disabled = is_auth_disabled()
+    
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         if user:
             return jsonify({
                 'authenticated': True,
-                'user': user.to_dict()
+                'user': user.to_dict(),
+                'auth_disabled': auth_disabled
             })
-    return jsonify({'authenticated': False}), 401
+    
+    # If auth is disabled, return success even without session
+    if auth_disabled:
+        return jsonify({
+            'authenticated': True,
+            'user': {'username': 'Guest', 'is_admin': True},
+            'auth_disabled': True
+        })
+    
+    return jsonify({'authenticated': False, 'auth_disabled': False}), 401
 
 
 @auth_bp.route('/api/auth/change-password', methods=['POST'])

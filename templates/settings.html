@@ -302,6 +302,41 @@
                 </div>
             </div>
 
+            <!-- Authentication Settings -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-gradient-to-r from-indigo-500 to-purple-600">
+                    <h3 class="font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-user-lock"></i> Authentication
+                    </h3>
+                </div>
+                <div class="p-4 space-y-4">
+                    <!-- Disable Authentication Toggle -->
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-unlock-alt text-indigo-600 text-sm"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800 text-sm">Disable Login</p>
+                                <p class="text-xs text-gray-500">Skip login screen on startup</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" v-model="settingsForm.auth_disabled" @change="saveSettings" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        </label>
+                    </div>
+                    <div v-if="settingsForm.auth_disabled" class="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-exclamation-triangle text-amber-600 mt-0.5"></i>
+                            <p class="text-xs text-amber-700">
+                                <strong>Warning:</strong> Authentication is disabled. Anyone with access to this server can use BashTower without logging in. Only use this on trusted networks.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Cron History Management -->
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div class="p-4 bg-gradient-to-r from-red-500 to-rose-600">

@@ -72,7 +72,8 @@ def get_settings():
             'ai_model': 'gpt-3.5-turbo',
             'ai_endpoint': '',
             'ai_configured': False,
-            'cron_history_limit': 0
+            'cron_history_limit': 0,
+            'auth_disabled': False
         })
     
     # Mask API key for security (show only last 4 chars)
@@ -89,7 +90,8 @@ def get_settings():
         'ai_model': settings.ai_model or 'gpt-3.5-turbo',
         'ai_endpoint': settings.ai_endpoint or '',
         'ai_configured': ai_configured,
-        'cron_history_limit': settings.cron_history_limit or 0
+        'cron_history_limit': settings.cron_history_limit or 0,
+        'auth_disabled': settings.auth_disabled or False
     })
 
 
@@ -113,6 +115,9 @@ def save_settings():
         settings.cron_history_limit = int(cron_limit) if cron_limit else 0
     except ValueError:
         settings.cron_history_limit = 0
+    
+    # Handle auth_disabled setting
+    settings.auth_disabled = data.get('auth_disabled', False)
     
     # Only update API key if a new one is provided (not masked)
     new_key = data.get('ai_api_key', '')
