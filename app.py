@@ -70,6 +70,7 @@ def create_app():
     from routes.settings import settings_bp
     from routes.auth import auth_bp
     from routes.users import users_bp
+    from routes.git_sync import git_sync_bp
     
     app.register_blueprint(templates_bp)
     app.register_blueprint(hosts_bp)
@@ -82,6 +83,7 @@ def create_app():
     app.register_blueprint(settings_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(users_bp)
+    app.register_blueprint(git_sync_bp)
     
     # Login route
     @app.route('/login')

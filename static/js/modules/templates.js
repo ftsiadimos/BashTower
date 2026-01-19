@@ -22,7 +22,28 @@ const TemplatesData = () => ({
 
     // Editor/UI expand states
     templateEditorExpanded: false,
-    scriptAIExpanded: false
+    scriptAIExpanded: false,
+
+    // Git Sync state
+    gitSyncModalOpen: false,
+    gitSyncTab: 'config',
+    gitConfig: {
+        repo_url: '',
+        branch: 'main',
+        access_token: '',
+        configured: false,
+        last_sync: null,
+        sync_status: null
+    },
+    showGitToken: false,
+    gitSyncLoading: false,
+    gitTestLoading: false,
+    gitExportLoading: false,
+    gitImportLoading: false,
+    gitPreviewLoading: false,
+    gitSyncMessage: '',
+    gitImportOverwrite: false,
+    gitImportPreview: null
 });
 
 // Computed properties related to templates
@@ -304,5 +325,197 @@ const TemplatesMethods = {
             const pre = document.querySelector('.script-ai-response');
             if (pre && window.hljs) try { window.hljs.highlightElement(pre.querySelector('code') || pre); } catch(e){}
         });
+    },
+
+    // ========================================================================
+    // Git Sync Methods
+    // ========================================================================
+
+    // Open Git Sync modal and fetch current configuration
+    async openGitSyncModal() {
+        this.gitSyncModalOpen = true;
+        this.gitSyncMessage = '';
+        this.gitImportPreview = null;
+        await this.fetchGitConfig();
+    },
+
+    // Close Git Sync modal
+    closeGitSyncModal() {
+        this.gitSyncModalOpen = false;
+        this.gitSyncMessage = '';
+        this.gitImportPreview = null;
+    },
+
+    // Fetch Git configuration from server
+    async fetchGitConfig() {
+        try {
+            const response = await fetch('/api/git/config');
+            const data = await response.json();
+            
+            this.gitConfig.repo_url = data.repo_url || '';
+            this.gitConfig.branch = data.branch || 'main';
+            this.gitConfig.access_token = data.access_token || '';
+            this.gitConfig.configured = data.configured || false;
+            this.gitConfig.last_sync = data.last_sync;
+            this.gitConfig.sync_status = data.sync_status;
+        } catch (error) {
+            console.error('Error fetching Git config:', error);
+            this.gitSyncMessage = 'Error: Failed to load Git configuration';
+        }
+    },
+
+    // Save Git configuration
+    async saveGitConfig() {
+        this.gitSyncLoading = true;
+        this.gitSyncMessage = '';
+        
+        try {
+            const response = await fetch('/api/git/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    repo_url: this.gitConfig.repo_url,
+                    branch: this.gitConfig.branch,
+                    access_token: this.gitConfig.access_token
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.gitSyncMessage = 'Configuration saved successfully!';
+                this.gitConfig.configured = data.configured;
+                await this.fetchGitConfig();
+            } else {
+                this.gitSyncMessage = 'Error: ' + (data.error || 'Failed to save configuration');
+            }
+        } catch (error) {
+            this.gitSyncMessage = 'Error: ' + error.message;
+        } finally {
+            this.gitSyncLoading = false;
+        }
+    },
+
+    // Test Git repository connection
+    async testGitConnection() {
+        this.gitTestLoading = true;
+        this.gitSyncMessage = '';
+        
+        try {
+            const response = await fetch('/api/git/test', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.gitSyncMessage = 'Connection successful! Available branches: ' + (data.branches || []).join(', ');
+            } else {
+                this.gitSyncMessage = 'Error: ' + (data.error || 'Connection test failed');
+            }
+        } catch (error) {
+            this.gitSyncMessage = 'Error: ' + error.message;
+        } finally {
+            this.gitTestLoading = false;
+        }
+    },
+
+    // Export templates to Git
+    async exportToGit() {
+        if (!confirm('This will push all templates to the Git repository. Continue?')) {
+            return;
+        }
+        
+        this.gitExportLoading = true;
+        this.gitSyncMessage = '';
+        
+        try {
+            const response = await fetch('/api/git/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.gitSyncMessage = data.message;
+                await this.fetchGitConfig(); // Refresh to get updated last_sync
+            } else {
+                this.gitSyncMessage = 'Error: ' + (data.error || 'Export failed');
+            }
+        } catch (error) {
+            this.gitSyncMessage = 'Error: ' + error.message;
+        } finally {
+            this.gitExportLoading = false;
+        }
+    },
+
+    // Preview import from Git
+    async previewGitImport() {
+        this.gitPreviewLoading = true;
+        this.gitSyncMessage = '';
+        
+        try {
+            const response = await fetch('/api/git/preview');
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.gitImportPreview = data;
+                if (data.total === 0) {
+                    this.gitSyncMessage = 'No templates found in repository';
+                }
+            } else {
+                this.gitSyncMessage = 'Error: ' + (data.error || 'Preview failed');
+                this.gitImportPreview = null;
+            }
+        } catch (error) {
+            this.gitSyncMessage = 'Error: ' + error.message;
+            this.gitImportPreview = null;
+        } finally {
+            this.gitPreviewLoading = false;
+        }
+    },
+
+    // Import templates from Git
+    async importFromGit() {
+        const confirmMsg = this.gitImportOverwrite 
+            ? 'This will import templates and overwrite any existing ones with the same name. Continue?'
+            : 'This will import new templates from Git. Existing templates will be skipped. Continue?';
+        
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        
+        this.gitImportLoading = true;
+        this.gitSyncMessage = '';
+        
+        try {
+            const response = await fetch('/api/git/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    overwrite: this.gitImportOverwrite
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.gitSyncMessage = data.message;
+                if (data.errors && data.errors.length > 0) {
+                    this.gitSyncMessage += '\nWarnings: ' + data.errors.join(', ');
+                }
+                await this.fetchGitConfig(); // Refresh to get updated last_sync
+                await this.fetchTemplates(); // Refresh templates list
+                this.gitImportPreview = null;
+            } else {
+                this.gitSyncMessage = 'Error: ' + (data.error || 'Import failed');
+            }
+        } catch (error) {
+            this.gitSyncMessage = 'Error: ' + error.message;
+        } finally {
+            this.gitImportLoading = false;
+        }
     }
 };

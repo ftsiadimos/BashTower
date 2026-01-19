@@ -179,6 +179,27 @@ class AppSettings(db.Model):
         self._ai_api_key = encrypt_value(value)
 
 
+class GitRepoConfig(db.Model):
+    """Git repository configuration for template synchronization."""
+    __tablename__ = 'git_repo_config'
+    id = db.Column(db.Integer, primary_key=True, default=1)
+    repo_url = db.Column(db.String(500), nullable=True)
+    branch = db.Column(db.String(100), default='main')
+    _access_token = db.Column('access_token', db.String(500), nullable=True)
+    last_sync = db.Column(db.DateTime, nullable=True)
+    sync_status = db.Column(db.String(50), nullable=True)  # 'success', 'error', etc.
+    
+    @property
+    def access_token(self):
+        """Decrypt and return access token."""
+        return decrypt_value(self._access_token)
+    
+    @access_token.setter
+    def access_token(self, value):
+        """Encrypt and store access token."""
+        self._access_token = encrypt_value(value)
+
+
 class User(db.Model):
     """User model for authentication."""
     id = db.Column(db.Integer, primary_key=True)

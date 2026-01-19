@@ -11,9 +11,239 @@
                 <input type="text" v-model="templateSearchQuery" placeholder="Search templates..." 
                     class="pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition">
             </div>
+            <button @click="openGitSyncModal" class="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition font-medium flex items-center gap-2 shadow-md">
+                <i class="fab fa-git-alt"></i> Git Sync
+            </button>
             <button @click="startNewTemplate" class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-medium flex items-center gap-2 shadow-md">
                 <i class="fas fa-plus"></i> Create Template
             </button>
+        </div>
+    </div>
+
+    <!-- Git Sync Modal -->
+    <div v-if="gitSyncModalOpen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="closeGitSyncModal">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 flex justify-between items-center bg-gradient-to-r from-orange-500 to-red-500">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fab fa-git-alt text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">Git Repository Sync</h3>
+                        <p class="text-white/70 text-sm">Sync templates with a Git repository</p>
+                    </div>
+                </div>
+                <button @click="closeGitSyncModal" class="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-y-auto p-5 space-y-5">
+                <!-- Tab Navigation -->
+                <div class="flex border-b border-gray-200">
+                    <button @click="gitSyncTab = 'config'" 
+                        :class="gitSyncTab === 'config' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-2.5 font-medium text-sm border-b-2 transition">
+                        <i class="fas fa-cog mr-2"></i>Configuration
+                    </button>
+                    <button @click="gitSyncTab = 'sync'" 
+                        :class="gitSyncTab === 'sync' ? 'border-orange-500 text-orange-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        class="px-4 py-2.5 font-medium text-sm border-b-2 transition">
+                        <i class="fas fa-sync-alt mr-2"></i>Sync
+                    </button>
+                </div>
+
+                <!-- Configuration Tab -->
+                <div v-if="gitSyncTab === 'config'" class="space-y-4">
+                    <!-- Repository URL -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-link mr-1 text-gray-400"></i> Repository URL
+                        </label>
+                        <input v-model="gitConfig.repo_url" 
+                            placeholder="https://github.com/username/repo.git"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition font-mono text-sm">
+                        <p class="text-xs text-gray-500 mt-1">HTTPS URL of your Git repository</p>
+                    </div>
+
+                    <!-- Branch -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-code-branch mr-1 text-gray-400"></i> Branch
+                        </label>
+                        <input v-model="gitConfig.branch" 
+                            placeholder="main"
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition text-sm">
+                    </div>
+
+                    <!-- Access Token -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-key mr-1 text-gray-400"></i> Access Token (Optional)
+                        </label>
+                        <div class="relative">
+                            <input :type="showGitToken ? 'text' : 'password'" 
+                                v-model="gitConfig.access_token" 
+                                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                                class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition font-mono text-sm">
+                            <button type="button" @click="showGitToken = !showGitToken" 
+                                class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <i :class="showGitToken ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Personal access token for private repositories</p>
+                    </div>
+
+                    <!-- Status Info -->
+                    <div v-if="gitConfig.configured" class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-center gap-2 text-green-700">
+                            <i class="fas fa-check-circle"></i>
+                            <span class="font-medium">Repository configured</span>
+                        </div>
+                        <p v-if="gitConfig.last_sync" class="text-sm text-green-600 mt-1">
+                            Last sync: [[ new Date(gitConfig.last_sync).toLocaleString() ]]
+                        </p>
+                    </div>
+
+                    <!-- Save & Test Buttons -->
+                    <div class="flex gap-3">
+                        <button @click="saveGitConfig" 
+                            :disabled="gitSyncLoading"
+                            class="flex-1 px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition font-medium flex items-center justify-center gap-2">
+                            <i :class="gitSyncLoading ? 'fas fa-spinner fa-spin' : 'fas fa-save'"></i>
+                            Save Configuration
+                        </button>
+                        <button @click="testGitConnection" 
+                            :disabled="gitSyncLoading || !gitConfig.repo_url"
+                            class="px-4 py-2.5 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition font-medium flex items-center gap-2">
+                            <i :class="gitTestLoading ? 'fas fa-spinner fa-spin' : 'fas fa-plug'"></i>
+                            Test
+                        </button>
+                    </div>
+
+                    <!-- Message Display -->
+                    <div v-if="gitSyncMessage" 
+                        :class="gitSyncMessage.startsWith('Error') ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'"
+                        class="border rounded-lg p-3 text-sm">
+                        [[ gitSyncMessage ]]
+                    </div>
+                </div>
+
+                <!-- Sync Tab -->
+                <div v-if="gitSyncTab === 'sync'" class="space-y-5">
+                    <!-- Not Configured Warning -->
+                    <div v-if="!gitConfig.configured" class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl mb-2"></i>
+                        <p class="text-yellow-700 font-medium">Repository not configured</p>
+                        <p class="text-yellow-600 text-sm mt-1">Please configure a Git repository first</p>
+                        <button @click="gitSyncTab = 'config'" class="mt-3 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition text-sm font-medium">
+                            Go to Configuration
+                        </button>
+                    </div>
+
+                    <!-- Sync Options -->
+                    <div v-else class="space-y-4">
+                        <!-- Export Section -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-upload text-blue-600 text-lg"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-blue-800">Export to Git</h4>
+                                    <p class="text-blue-600 text-sm mt-1">Push all templates to the configured Git repository</p>
+                                    <p class="text-blue-500 text-xs mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        [[ templates.length ]] templates will be exported to the "scripts" folder
+                                    </p>
+                                    <button @click="exportToGit" 
+                                        :disabled="gitSyncLoading || templates.length === 0"
+                                        class="mt-3 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition font-medium flex items-center gap-2">
+                                        <i :class="gitExportLoading ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-upload-alt'"></i>
+                                        [[ gitExportLoading ? 'Exporting...' : 'Export Templates' ]]
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Import Section -->
+                        <div class="bg-green-50 border border-green-200 rounded-xl p-5">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-download text-green-600 text-lg"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <h4 class="font-semibold text-green-800">Import from Git</h4>
+                                    <p class="text-green-600 text-sm mt-1">Pull templates from the configured Git repository</p>
+                                    
+                                    <!-- Import Options -->
+                                    <div class="mt-3 flex items-center gap-4">
+                                        <label class="flex items-center gap-2 text-sm text-green-700 cursor-pointer">
+                                            <input type="checkbox" v-model="gitImportOverwrite" class="rounded border-green-400 text-green-600 focus:ring-green-500">
+                                            Overwrite existing templates
+                                        </label>
+                                    </div>
+
+                                    <div class="flex gap-3 mt-3">
+                                        <button @click="previewGitImport" 
+                                            :disabled="gitSyncLoading"
+                                            class="px-4 py-2.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 disabled:opacity-50 transition font-medium flex items-center gap-2">
+                                            <i :class="gitPreviewLoading ? 'fas fa-spinner fa-spin' : 'fas fa-eye'"></i>
+                                            Preview
+                                        </button>
+                                        <button @click="importFromGit" 
+                                            :disabled="gitSyncLoading"
+                                            class="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition font-medium flex items-center gap-2">
+                                            <i :class="gitImportLoading ? 'fas fa-spinner fa-spin' : 'fas fa-cloud-download-alt'"></i>
+                                            [[ gitImportLoading ? 'Importing...' : 'Import Templates' ]]
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Import Preview -->
+                        <div v-if="gitImportPreview && gitImportPreview.templates.length > 0" class="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                            <h4 class="font-semibold text-gray-800 mb-3">
+                                <i class="fas fa-list mr-2"></i>Import Preview ([[ gitImportPreview.total ]] templates)
+                            </h4>
+                            <div class="max-h-48 overflow-y-auto space-y-2">
+                                <div v-for="t in gitImportPreview.templates" :key="t.filename" 
+                                    class="flex items-center justify-between py-2 px-3 bg-white rounded-lg border border-gray-100">
+                                    <div class="flex items-center gap-3">
+                                        <i :class="t.script_type === 'python' ? 'fab fa-python text-yellow-500' : 'fas fa-terminal text-gray-500'"></i>
+                                        <span class="text-sm font-medium text-gray-700">[[ t.name ]]</span>
+                                    </div>
+                                    <span :class="t.exists ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'" 
+                                        class="text-xs px-2 py-0.5 rounded-full">
+                                        [[ t.exists ? 'Update' : 'New' ]]
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-xs text-gray-500 flex gap-4">
+                                <span><i class="fas fa-plus-circle text-green-500 mr-1"></i>[[ gitImportPreview.new ]] new</span>
+                                <span><i class="fas fa-sync text-yellow-500 mr-1"></i>[[ gitImportPreview.existing ]] existing</span>
+                            </div>
+                        </div>
+
+                        <!-- Message Display -->
+                        <div v-if="gitSyncMessage" 
+                            :class="gitSyncMessage.startsWith('Error') ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'"
+                            class="border rounded-lg p-3 text-sm">
+                            [[ gitSyncMessage ]]
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-gray-50 border-t flex justify-end">
+                <button @click="closeGitSyncModal" class="px-5 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition font-medium">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 
