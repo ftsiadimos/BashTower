@@ -10,7 +10,7 @@ import atexit
 import logging
 from datetime import timedelta
 from flask import Flask, render_template, redirect, url_for, session
-from extensions import db, scheduler
+from extensions import db, migrate, scheduler
 from services.cron_service import load_cron_jobs_into_scheduler
 
 
@@ -57,6 +57,7 @@ def create_app():
     
     # Initialize extensions
     db.init_app(app)
+    migrate.init_app(app, db)
     
     # Register blueprints
     from routes.templates import templates_bp
