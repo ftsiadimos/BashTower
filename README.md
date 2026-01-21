@@ -5,8 +5,13 @@
 <h1 align="center">BashTower</h1>
 
 <p align="center">
-  <strong>A modern, web-based remote script execution platform</strong><br>
-  Execute Bash & Python scripts across multiple hosts with ease
+  <strong>A lightweight, web-based remote script execution platform for home labs</strong><br>
+  Designed for hobbyists and home lab enthusiasts managing a small number of servers
+</p>
+
+<p align="center">
+  <em>Have fun writing your own Bash or Python scripts to automate tasks, save them as templates,<br>
+  and easily sync to a Git repository to share with others!</em>
 </p>
 
 <p align="center">
@@ -44,8 +49,9 @@
 ### Integrations
 | Feature | Description |
 |---------|-------------|
-| 🤖 **AI-Powered Troubleshooting** | Analyze errors with OpenAI, Google Gemini, or Ollama |
-| ✨ **AI Script Assistant** | Generate and improve scripts using AI |
+| 🔄 **Git Repository Sync** | Sync your script templates to a Git repository for version control and easy sharing |
+| 🤖 **AI-Powered Troubleshooting** | Analyze job errors and get solutions with OpenAI, Google Gemini, or Ollama |
+| ✨ **AI Script Assistant** | Generate, improve, and debug scripts using AI directly in the editor |
 | 🛰️ **Red Hat Satellite Sync** | Auto-import host inventory from Satellite API |
 
 ### User Experience
