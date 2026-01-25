@@ -70,6 +70,7 @@ class Host(db.Model):
     hostname = db.Column(db.String(200), nullable=False)  # IP or FQDN
     username = db.Column(db.String(100), nullable=False)
     port = db.Column(db.Integer, default=22)
+    shell = db.Column(db.String(50), nullable=False)
     # Link Host to Groups
     groups = db.relationship('HostGroup', secondary=host_group_membership, 
                             backref=db.backref('hosts', lazy='dynamic'))

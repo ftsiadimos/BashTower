@@ -91,7 +91,7 @@ def execute_ssh_command(app, host_obj, key_obj, script_content, job_id, log_mode
             )
 
             # Execute the script with the appropriate interpreter
-            interpreter = 'python3 -' if script_type == 'python' else 'bash -s'
+            interpreter = 'python3 -' if script_type == 'python' else host_obj.shell
             stdin, stdout, stderr = client.exec_command(interpreter, timeout=300)
             stdin.write(script_content.encode('utf-8'))
             stdin.channel.shutdown_write()
