@@ -74,7 +74,8 @@ const JobsMethods = {
             template_id: this.runForm.template_id,
             host_ids: [],
             host_group_ids: [],
-            key_id: this.runForm.key_id
+            key_id: this.runForm.key_id,
+            arguments: this.runForm.arguments || {}
         };
 
         // Determine target based on selection type

@@ -61,6 +61,7 @@ class Template(db.Model):
     name = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)  # The script content
     script_type = db.Column(db.String(20), default='bash')  # 'bash' or 'python'
+    arguments = db.Column(db.Text)  # JSON string of argument definitions
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -70,6 +71,7 @@ class Host(db.Model):
     hostname = db.Column(db.String(200), nullable=False)  # IP or FQDN
     username = db.Column(db.String(100), nullable=False)
     port = db.Column(db.Integer, default=22)
+    shell = db.Column(db.String(50), nullable=False)
     # Link Host to Groups
     groups = db.relationship('HostGroup', secondary=host_group_membership, 
                             backref=db.backref('hosts', lazy='dynamic'))

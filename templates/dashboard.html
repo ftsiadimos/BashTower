@@ -91,6 +91,45 @@
                     </div>
                 </div>
                 
+                <!-- Script Arguments (if template has them) -->
+                <div v-if="getSelectedTemplate() && getSelectedTemplate().arguments && JSON.parse(getSelectedTemplate().arguments || '[]').length > 0">
+                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                        <i class="fas fa-sliders-h mr-1 text-gray-400"></i> Script Arguments
+                    </label>
+                    <div class="space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div v-for="arg in JSON.parse(getSelectedTemplate().arguments || '[]')" :key="arg.name" class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-medium text-gray-600 mb-1">
+                                    [[ arg.label || arg.name ]]
+                                    <span v-if="arg.required" class="text-red-500">*</span>
+                                </label>
+                                <input v-if="arg.type === 'text'" 
+                                    v-model="runForm.arguments[arg.name]"
+                                    type="text"
+                                    :placeholder="arg.default_value || 'Enter ' + (arg.label || arg.name).toLowerCase()"
+                                    :required="arg.required"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 outline-none">
+                                <input v-else-if="arg.type === 'password'"
+                                    v-model="runForm.arguments[arg.name]"
+                                    type="password"
+                                    :placeholder="arg.default_value || 'Enter ' + (arg.label || arg.name).toLowerCase()"
+                                    :required="arg.required"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 outline-none">
+                                <input v-else-if="arg.type === 'number'"
+                                    v-model="runForm.arguments[arg.name]"
+                                    type="number"
+                                    :placeholder="arg.default_value || 'Enter ' + (arg.label || arg.name).toLowerCase()"
+                                    :required="arg.required"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 outline-none">
+                            </div>
+                            <div>
+                                <p v-if="arg.description" class="text-xs text-gray-500">[[ arg.description ]]</p>
+                                <p v-if="arg.default_value" class="text-xs text-gray-400">Default: [[ arg.default_value ]]</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Target Selection -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-3">

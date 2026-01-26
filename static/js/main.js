@@ -82,7 +82,8 @@ const App = {
                 selection_type: 'groups',
                 host_ids: [],
                 group_ids: [],
-                key_id: null
+                key_id: null,
+                arguments: {}
             },
 
             // --- AI Troubleshooter ---

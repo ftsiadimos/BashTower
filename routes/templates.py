@@ -18,6 +18,7 @@ def handle_templates():
         name = data.get('name', '').strip()
         script = data.get('script', '')
         script_type = data.get('script_type', 'bash')  # Default to bash
+        arguments = data.get('arguments')  # JSON string of argument definitions
         
         if not name:
             return jsonify({'error': 'Template name is required'}), 400
@@ -34,14 +35,15 @@ def handle_templates():
         if existing:
             return jsonify({'error': f'A template with the name "{name}" already exists'}), 400
         
-        new_template = Template(name=name, content=script, script_type=script_type)
+        new_template = Template(name=name, content=script, script_type=script_type, arguments=arguments)
         db.session.add(new_template)
         db.session.commit()
         return jsonify({
             'id': new_template.id, 
             'name': new_template.name, 
             'script': new_template.content,
-            'script_type': new_template.script_type
+            'script_type': new_template.script_type,
+            'arguments': new_template.arguments
         }), 201
 
     templates = Template.query.all()
@@ -49,7 +51,8 @@ def handle_templates():
         'id': t.id, 
         'name': t.name, 
         'script': t.content,
-        'script_type': t.script_type or 'bash'
+        'script_type': t.script_type or 'bash',
+        'arguments': t.arguments
     } for t in templates])
 
 
@@ -75,12 +78,14 @@ def handle_template_item(id):
         template.name = new_name
         template.content = data.get('script', template.content)
         template.script_type = script_type
+        template.arguments = data.get('arguments', template.arguments)
         db.session.commit()
         return jsonify({
             'id': template.id,
             'name': template.name,
             'script': template.content,
-            'script_type': template.script_type
+            'script_type': template.script_type,
+            'arguments': template.arguments
         })
 
     if request.method == 'DELETE':
@@ -101,5 +106,6 @@ def handle_template_item(id):
         'id': template.id, 
         'name': template.name, 
         'script': template.content,
-        'script_type': template.script_type or 'bash'
+        'script_type': template.script_type or 'bash',
+        'arguments': template.arguments
     })

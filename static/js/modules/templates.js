@@ -5,7 +5,7 @@
 const TemplatesData = () => ({
     templates: [],
     editingTemplate: false,
-    templateForm: { id: null, name: '', script: '', script_type: 'bash' },
+    templateForm: { id: null, name: '', script: '', script_type: 'bash', arguments: [] },
     templateSearchQuery: '',
     templateDropdownOpen: false,
     templateDropdownSearch: '',
@@ -75,13 +75,29 @@ const TemplatesMethods = {
 
     // Start creating a new template
     startNewTemplate() {
-        this.templateForm = { id: null, name: '', script: '', script_type: 'bash' };
+        this.templateForm = { id: null, name: '', script: '', script_type: 'bash', arguments: [] };
         this.editingTemplate = true;
     },
 
     // Edit an existing template
     editTemplate(template) {
-        this.templateForm = { ...template, script: template.script, script_type: template.script_type || 'bash' };
+        // Parse arguments if they exist
+        let templateArguments = [];
+        if (template.arguments) {
+            try {
+                templateArguments = JSON.parse(template.arguments);
+            } catch (e) {
+                console.warn('Failed to parse template arguments:', e);
+                templateArguments = [];
+            }
+        }
+        
+        this.templateForm = { 
+            ...template, 
+            script: template.script, 
+            script_type: template.script_type || 'bash',
+            arguments: templateArguments
+        };
         this.editingTemplate = true;
     },
 
@@ -103,7 +119,8 @@ const TemplatesMethods = {
         const payload = {
             name: this.templateForm.name,
             script: this.templateForm.script,
-            script_type: this.templateForm.script_type || 'bash'
+            script_type: this.templateForm.script_type || 'bash',
+            arguments: JSON.stringify(this.templateForm.arguments || [])
         };
 
         const response = await fetch(url, {
@@ -221,6 +238,24 @@ const TemplatesMethods = {
         this.runForm.template_id = id;
         this.templateDropdownOpen = false;
         this.templateDropdownSearch = '';
+        
+        // Clear any existing arguments when template changes
+        this.runForm.arguments = {};
+        
+        // Pre-populate with default values if template has arguments
+        const selectedTemplate = this.templates.find(t => t.id === id);
+        if (selectedTemplate && selectedTemplate.arguments) {
+            try {
+                const templateArgs = JSON.parse(selectedTemplate.arguments);
+                templateArgs.forEach(arg => {
+                    if (arg.default_value) {
+                        this.runForm.arguments[arg.name] = arg.default_value;
+                    }
+                });
+            } catch (e) {
+                console.warn('Failed to parse template arguments:', e);
+            }
+        }
     },
 
     // AI Script Assistant - Generate or improve bash script
@@ -306,6 +341,31 @@ const TemplatesMethods = {
     // Clear AI response
     clearAIResponse() {
         this.scriptAIResponse = '';
+    },
+
+    // Add a new argument to the template
+    addArgument() {
+        if (!this.templateForm.arguments) {
+            this.templateForm.arguments = [];
+        }
+        this.templateForm.arguments.push({
+            name: '',
+            label: '',
+            type: 'text',
+            required: true,
+            default_value: '',
+            description: ''
+        });
+    },
+
+    // Remove an argument from the template
+    removeArgument(index) {
+        this.templateForm.arguments.splice(index, 1);
+    },
+
+    // Get argument placeholder text for use in scripts
+    getArgumentPlaceholder(arg) {
+        return `{{${arg.name}}}`;
     },
 
     // Toggle the template editor expand/collapse state
