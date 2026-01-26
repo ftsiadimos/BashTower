@@ -39,6 +39,7 @@
 |---------|-------------|
 | 🖥️ **Multi-Host Execution** | Run scripts on multiple hosts simultaneously via SSH |
 | 📝 **Template Library** | Save reusable Bash & Python script templates with syntax highlighting |
+| 🎯 **Dynamic Arguments** | Create parameterized templates with runtime arguments for flexible script execution |
 | 🐍 **Python Support** | Execute Python 3 scripts alongside traditional Bash scripts |
 | 👥 **Host & Group Management** | Organize hosts into logical groups for bulk operations |
 | 🔑 **Secure SSH Key Storage** | Store private keys with AES-256 encryption |
@@ -216,7 +217,7 @@ Hosts → Add Host
 
 Navigate to **Templates** and create reusable scripts:
 
-**Bash Script Example:**
+**Basic Bash Script Example:**
 ```bash
 #!/bin/bash
 echo "System Info for \$(hostname)"
@@ -224,6 +225,15 @@ echo "=========================="
 uname -a
 df -h
 free -m
+```
+
+**Dynamic Script with Arguments:**
+```bash
+#!/bin/bash
+echo "Server: {{server_name}}"
+echo "Environment: {{environment}}"
+echo "Testing port {{port}}..."
+nc -z localhost {{port}} && echo "Port {{port}} is open" || echo "Port {{port}} is closed"
 ```
 
 **Python Script Example:**
@@ -237,14 +247,33 @@ print(f"CPU Usage: {psutil.cpu_percent()}%")
 print(f"Memory: {psutil.virtual_memory().percent}%")
 ```
 
+**Creating Dynamic Templates:**
+1. Click **"Add Argument"** to define script parameters
+2. Configure each argument:
+   - **Variable Name**: Used as `{{variable_name}}` in your script
+   - **Label**: User-friendly display name
+   - **Type**: text, password, number, or select
+   - **Required**: Whether the argument is mandatory
+   - **Default Value**: Pre-filled value for convenience
+   - **Description**: Help text for users
+3. Use `{{argument_name}}` placeholders anywhere in your script
+4. Arguments will be prompted for when executing the template
+
 ### 4. Running Scripts
 
 1. Go to **Dashboard**
 2. Select a **Template** (with Bash/Python indicator)
-3. Choose **Target**: Host Groups or Individual Hosts
-4. Select an **SSH Key**
-5. Click **Launch Script**
-6. Monitor real-time output in the terminal view
+3. **Fill in Script Arguments** (if the template has dynamic parameters)
+4. Choose **Target**: Host Groups or Individual Hosts
+5. Select an **SSH Key**
+6. Click **Launch Script**
+7. Monitor real-time output in the terminal view
+
+**Script Arguments**: Templates with dynamic arguments will display an arguments section where you can:
+- Fill in required parameters (marked with *)
+- Override default values
+- See descriptions for each argument
+- Use different values for different environments
 
 ### 5. Scheduling Cron Jobs
 
@@ -308,13 +337,23 @@ Content-Type: application/json
 # List all templates
 GET /api/templates
 
-# Create template
+# Create template with arguments
 POST /api/templates
-{"name": "My Script", "script": "#!/bin/bash\necho hello", "script_type": "bash"}
+{
+  "name": "My Dynamic Script", 
+  "script": "#!/bin/bash\necho \"Hello {{name}}!\"\necho \"Environment: {{env}}\"", 
+  "script_type": "bash",
+  "arguments": "[{\"name\":\"name\",\"label\":\"Your Name\",\"type\":\"text\",\"required\":true},{\"name\":\"env\",\"label\":\"Environment\",\"type\":\"text\",\"default_value\":\"production\"}]"
+}
 
-# Run template
+# Run template with arguments
 POST /api/run
-{"template_id": 1, "host_ids": [1, 2], "key_id": 1}
+{
+  "template_id": 1, 
+  "host_ids": [1, 2], 
+  "key_id": 1,
+  "arguments": {"name": "John", "env": "staging"}
+}
 ```
 
 ### Hosts

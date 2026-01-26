@@ -22,6 +22,7 @@ def run_template():
     single_host_ids = data.get('host_ids', [])
     group_ids = data.get('host_group_ids', [])
     key_id = data.get('key_id')
+    arguments = data.get('arguments', {})  # Script arguments from user
 
     if not template_id or not key_id:
         return jsonify({'error': 'Missing template or key'}), 400
@@ -61,7 +62,7 @@ def run_template():
     script_type = template.script_type or 'bash'
     t = threading.Thread(
         target=run_job_thread,
-        args=(app, job.id, template_id, resolved_host_ids, key_id, script_type)
+        args=(app, job.id, template_id, resolved_host_ids, key_id, script_type, arguments)
     )
     t.start()
 

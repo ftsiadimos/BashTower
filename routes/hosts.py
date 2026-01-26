@@ -20,7 +20,8 @@ def handle_hosts():
             name=data.get('name', data['hostname']),
             hostname=data['hostname'],
             username=data['username'],
-            port=int(data.get('port', 22))
+            port=int(data.get('port', 22)),
+            shell=data['shell']
         )
         db.session.add(new_host)
         db.session.commit()
@@ -30,6 +31,7 @@ def handle_hosts():
             'hostname': new_host.hostname,
             'username': new_host.username,
             'port': new_host.port,
+            'shell': new_host.shell,
             'groups': []
         }), 201
     
@@ -41,6 +43,7 @@ def handle_hosts():
         'hostname': h.hostname,
         'username': h.username,
         'port': h.port,
+        'shell': h.shell,
         'group_ids': [g.id for g in h.groups]
     } for h in hosts])
 
@@ -53,6 +56,7 @@ def update_host(id):
     host.name = data.get('name', host.name)
     host.hostname = data.get('hostname', host.hostname)
     host.username = data.get('username', host.username)
+    host.shell = data.get('shell', host.shell)
     host.port = int(data.get('port', host.port or 22))
     
     db.session.commit()
@@ -62,6 +66,7 @@ def update_host(id):
         'hostname': host.hostname,
         'username': host.username,
         'port': host.port,
+        'shell': host.shell,
         'group_ids': [g.id for g in host.groups]
     })
 

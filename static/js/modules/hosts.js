@@ -46,7 +46,7 @@ const HostsMethods = {
     // Open modal to add a new host
     openHostModal() {
         this.editingHost = null;
-        this.hostForm = { id: null, name: '', hostname: '', username: '', port: 22 };
+   this.hostForm = { id: null, name: '', hostname: '', username: '', port: 22, shell: 'bash' };
         this.showHostModal = true;
     },
 
@@ -58,7 +58,8 @@ const HostsMethods = {
             name: host.name,
             hostname: host.hostname,
             username: host.username,
-            port: host.port || 22
+            port: host.port || 22,
+            shell: host.shell || 'bash'
         };
         this.showHostModal = true;
     },
@@ -67,7 +68,7 @@ const HostsMethods = {
     closeHostModal() {
         this.showHostModal = false;
         this.editingHost = null;
-        this.hostForm = { id: null, name: '', hostname: '', username: '', port: 22 };
+        this.hostForm = { id: null, name: '', hostname: '', username: '', port: 22, shell: 'bash' };
     },
 
     // Save host (add or update)

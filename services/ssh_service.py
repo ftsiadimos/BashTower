@@ -91,7 +91,14 @@ def execute_ssh_command(app, host_obj, key_obj, script_content, job_id, log_mode
             )
 
             # Execute the script with the appropriate interpreter
-            interpreter = 'python3 -' if script_type == 'python' else 'bash -s'
+            # Use the shell specified in the host configuration, default to 'bash' if not set
+            if script_type == 'python':
+                interpreter = 'python3 -'
+            else:
+                # Use the host's configured shell, with fallback to 'bash'
+                shell = getattr(host_obj, 'shell', 'bash') or 'bash'
+                interpreter = f'{shell} -s'
+            
             stdin, stdout, stderr = client.exec_command(interpreter, timeout=300)
             stdin.write(script_content.encode('utf-8'))
             stdin.channel.shutdown_write()
@@ -135,17 +142,22 @@ def execute_ssh_command(app, host_obj, key_obj, script_content, job_id, log_mode
         return log_entry
 
 
-def run_job_thread(app, job_id, template_id, host_ids, key_id, script_type='bash'):
+def run_job_thread(app, job_id, template_id, host_ids, key_id, script_type='bash', arguments=None):
     """
     Background thread to orchestrate job execution.
     host_ids is the resolved list of unique host IDs.
     script_type: Type of script ('bash' or 'python')
+    arguments: Dictionary of argument values to substitute in the script
     """
     with app.app_context():
         job = Job.query.get(job_id)
         template = Template.query.get(template_id)
         key = SSHKey.query.get(key_id)
         hosts = Host.query.filter(Host.id.in_(host_ids)).all()
+        
+        # Default arguments to empty dict if not provided
+        if arguments is None:
+            arguments = {}
 
         if not template or not key or not hosts:
             logger.error(f"Job {job_id} setup failed: Missing template, key, or hosts")
@@ -162,12 +174,19 @@ def run_job_thread(app, job_id, template_id, host_ids, key_id, script_type='bash
         
         logger.info(f"Starting job {job_id} with template '{template.name}' on {len(hosts)} hosts")
         
+        # Process script arguments by substituting placeholders
+        script_content = template.content
+        if arguments:
+            for arg_name, arg_value in arguments.items():
+                placeholder = f'{{{{{arg_name}}}}}'  # {{arg_name}} format
+                script_content = script_content.replace(placeholder, str(arg_value))
+        
         # Execute on all hosts in parallel
         threads = []
         for host in hosts:
             t = threading.Thread(
                 target=execute_ssh_command,
-                args=(app, host, key, template.content, job.id, JobLog, script_type)
+                args=(app, host, key, script_content, job.id, JobLog, script_type)
             )
             threads.append(t)
             t.start()
