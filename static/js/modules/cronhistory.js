@@ -94,6 +94,41 @@ const CronHistoryMethods = {
         }
     },
 
+    // View all outputs in a combined modal
+    async viewAllOutputs() {
+        if (this.cronHistory.length === 0 && this.cronHistoryTotal === 0) {
+            return;
+        }
+        // Reset filters when opening
+        this.allOutputsFilterCronJob = '';
+        this.allOutputsFilterTimeRange = 'all';
+        this.allOutputsFilterStatus = '';
+        this.allOutputsLimit = '100';
+        
+        // Fetch more logs to populate the modal (1000 by default)
+        this.cronHistoryLoading = true;
+        try {
+            const url = new URL('/api/cronhistory', window.location.origin);
+            url.searchParams.append('page', 1);
+            url.searchParams.append('per_page', 1000);
+            if (this.cronHistorySearchQuery && this.cronHistorySearchQuery.trim()) {
+                url.searchParams.append('search', this.cronHistorySearchQuery.trim());
+            }
+            const response = await fetch(url);
+            const data = await response.json();
+            // Store these logs separately for the modal
+            this.allOutputsData = data.logs || [];
+            this.viewingAllOutputs = true;
+        } catch (error) {
+            console.error('Error fetching logs for all outputs view:', error);
+            // Fallback to current page data if fetch fails
+            this.allOutputsData = this.cronHistory;
+            this.viewingAllOutputs = true;
+        } finally {
+            this.cronHistoryLoading = false;
+        }
+    },
+
     // Clean all cron logs from the database
     async cleanCronLogs() {
         if (!confirm('Delete ALL cron logs? This cannot be undone.')) {

@@ -6,6 +6,9 @@
             <p class="text-gray-500 mt-1">Monitor scheduled job executions and results</p>
         </div>
         <div class="flex items-center gap-2">
+            <button @click="viewAllOutputs()" :disabled="cronHistory.length === 0" class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-medium flex items-center gap-2 shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-layer-group"></i> View All Outputs
+            </button>
             <button @click="fetchCronHistory()" class="px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-gray-700 font-medium flex items-center gap-2">
                 <i class="fas fa-sync-alt" :class="{'animate-spin': cronHistoryLoading}"></i> Refresh
             </button>
@@ -184,15 +187,27 @@
             </div>
             <div class="flex items-center gap-2">
                 <button @click="prevCronHistoryPage" :disabled="cronHistoryPage === 1" 
-                    class="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-sm hover:bg-gray-50 transition font-medium flex items-center gap-1">
-                    <i class="fas fa-chevron-left"></i> Previous
+                    class="px-3 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-sm hover:bg-gray-50 transition font-medium flex items-center gap-1">
+                    <i class="fas fa-chevron-left"></i>
+                    <span class="hidden sm:inline">Previous</span>
                 </button>
                 <div class="flex items-center gap-1">
-                    <span class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">[[ cronHistoryPage ]]</span>
+                    <button v-for="page in cronHistoryVisiblePages" :key="page"
+                        @click="page !== '...' && (cronHistoryPage = page, fetchCronHistory(page, cronHistoryPerPage, cronHistorySearchQuery))"
+                        :disabled="page === '...'"
+                        :class="{
+                            'px-3 py-2 rounded-lg text-sm font-medium transition': true,
+                            'bg-blue-600 text-white': page === cronHistoryPage,
+                            'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50': page !== cronHistoryPage && page !== '...',
+                            'bg-white border border-gray-300 text-gray-400 cursor-default': page === '...'
+                        }">
+                        [[ page ]]
+                    </button>
                 </div>
                 <button @click="nextCronHistoryPage" :disabled="cronHistoryPage >= Math.ceil(cronHistoryTotal / cronHistoryPerPage)" 
-                    class="px-4 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-sm hover:bg-gray-50 transition font-medium flex items-center gap-1">
-                    Next <i class="fas fa-chevron-right"></i>
+                    class="px-3 py-2 bg-white border border-gray-300 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed text-sm hover:bg-gray-50 transition font-medium flex items-center gap-1">
+                    <span class="hidden sm:inline">Next</span>
+                    <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
         </div>
@@ -262,6 +277,159 @@
                     <span class="px-1.5 py-0.5 rounded text-xs" :class="activeCronLog.script_type === 'python' ? 'bg-yellow-900/50 text-yellow-400' : 'bg-slate-700 text-slate-400'">[[ activeCronLog.script_type === 'python' ? 'Python' : 'Bash' ]]</span>
                 </div>
                 <button @click="activeCronLog = null" class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition font-medium text-sm">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- View All Outputs Modal -->
+    <div v-if="viewingAllOutputs" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" @click.self="viewingAllOutputs = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 bg-gradient-to-r from-slate-700 to-slate-900">
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-layer-group text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-lg">All Outputs - Combined View</h3>
+                            <p class="text-white/70 text-sm">Viewing [[ filteredAllOutputs.length ]] of [[ allOutputsData.length ]] execution log(s)</p>
+                        </div>
+                    </div>
+                    <button @click="viewingAllOutputs = false" class="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                
+                <!-- Filters -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <!-- Cron Job Filter -->
+                    <div>
+                        <label class="block text-xs font-medium text-white/70 mb-1.5">Filter by Cron Job</label>
+                        <select v-model="allOutputsFilterCronJob" class="w-full px-3 py-2 text-sm bg-slate-800 text-white border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">All Cron Jobs</option>
+                            <option v-for="jobName in uniqueCronJobNames" :key="jobName" :value="jobName">[[ jobName ]]</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Time Range Filter -->
+                    <div>
+                        <label class="block text-xs font-medium text-white/70 mb-1.5">Time Range</label>
+                        <select v-model="allOutputsFilterTimeRange" class="w-full px-3 py-2 text-sm bg-slate-800 text-white border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="all">All Time</option>
+                            <option value="10m">Last 10 Minutes</option>
+                            <option value="30m">Last 30 Minutes</option>
+                            <option value="1h">Last 1 Hour</option>
+                            <option value="3h">Last 3 Hours</option>
+                            <option value="6h">Last 6 Hours</option>
+                            <option value="12h">Last 12 Hours</option>
+                            <option value="24h">Last 24 Hours</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Status Filter -->
+                    <div>
+                        <label class="block text-xs font-medium text-white/70 mb-1.5">Filter by Status</label>
+                        <select v-model="allOutputsFilterStatus" class="w-full px-3 py-2 text-sm bg-slate-800 text-white border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="">All Statuses</option>
+                            <option value="success">Success</option>
+                            <option value="error">Error</option>
+                            <option value="connection_failed">Connection Failed</option>
+                            <option value="running">Running</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Limit Filter -->
+                    <div>
+                        <label class="block text-xs font-medium text-white/70 mb-1.5">Show Results</label>
+                        <select v-model="allOutputsLimit" class="w-full px-3 py-2 text-sm bg-slate-800 text-white border border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                            <option value="10">10</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                            <option value="1000">1000</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Body - All Outputs -->
+            <div class="flex-1 bg-slate-950 overflow-auto p-5 space-y-6">
+                <div v-for="(log, index) in filteredAllOutputs" :key="log.id" class="border-2 border-slate-800 rounded-xl overflow-hidden">
+                    <!-- Log Header -->
+                    <div class="p-4 bg-slate-900 border-b border-slate-800 flex justify-between items-start">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                                <span class="text-white font-bold text-sm">#[[ index + 1 ]]</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-base flex items-center gap-2">
+                                    [[ log.cron_job_name ]]
+                                    <span :class="{
+                                        'px-2 py-0.5 text-xs font-semibold rounded-full': true,
+                                        'bg-green-500 text-white': log.status === 'success',
+                                        'bg-red-500 text-white': log.status === 'error' || log.status === 'connection_failed',
+                                        'bg-yellow-500 text-white': log.status === 'running'
+                                    }">[[ log.status ]]</span>
+                                </h4>
+                                <div class="flex items-center gap-3 mt-1 text-xs">
+                                    <span class="text-slate-400 flex items-center gap-1">
+                                        <i class="fas fa-server"></i> [[ log.host_name || log.hostname ]]
+                                    </span>
+                                    <span class="text-slate-600">•</span>
+                                    <span class="text-slate-400 flex items-center gap-1">
+                                        <i class="fas fa-calendar"></i> [[ new Date(log.created_at).toLocaleString() ]]
+                                    </span>
+                                    <span class="text-slate-600">•</span>
+                                    <span class="text-slate-400 flex items-center gap-1">
+                                        <i :class="log.script_type === 'python' ? 'fab fa-python' : 'fas fa-terminal'"></i>
+                                        [[ log.template_name ]]
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Output Content -->
+                    <div class="p-4 space-y-4">
+                        <!-- Stdout -->
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span class="text-green-400 font-mono text-xs font-semibold">STDOUT</span>
+                            </div>
+                            <pre class="text-green-400 whitespace-pre-wrap font-mono text-xs leading-relaxed bg-slate-900/50 rounded-lg p-3 max-h-48 overflow-auto">[[ stripAnsi(log.stdout) || '(No output)' ]]</pre>
+                        </div>
+
+                        <!-- Stderr -->
+                        <div v-if="log.stderr">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                                <span class="text-red-400 font-mono text-xs font-semibold">STDERR</span>
+                            </div>
+                            <pre class="text-red-400 whitespace-pre-wrap font-mono text-xs leading-relaxed bg-red-950/30 border border-red-900/30 rounded-lg p-3 max-h-48 overflow-auto">[[ stripAnsi(log.stderr) ]]</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div v-if="filteredAllOutputs.length === 0" class="text-center py-16">
+                    <div class="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-filter text-slate-600 text-2xl"></i>
+                    </div>
+                    <p class="text-slate-400 font-medium">No logs match the selected filters</p>
+                    <p class="text-slate-500 text-sm mt-1">Try adjusting your filter criteria</p>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+                <div class="text-xs text-slate-500">
+                    Showing [[ filteredAllOutputs.length ]] of [[ allOutputsData.length ]] logs ([[ cronHistoryTotal ]] total in database)
+                </div>
+                <button @click="viewingAllOutputs = false" class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition font-medium text-sm">
                     Close
                 </button>
             </div>

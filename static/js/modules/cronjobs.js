@@ -17,6 +17,8 @@ const CronJobsMethods = {
         this.editingCronJob = true;
         this.cronHostSearchQuery = '';
         this.cronGroupSearchQuery = '';
+        this.cronTemplateSearchQuery = '';
+        this.cronTemplateDropdownOpen = false;
         this.cronJobForm = {
             id: null,
             name: '',
@@ -41,6 +43,8 @@ const CronJobsMethods = {
         this.editingCronJob = true;
         this.cronHostSearchQuery = '';
         this.cronGroupSearchQuery = '';
+        this.cronTemplateSearchQuery = '';
+        this.cronTemplateDropdownOpen = false;
         this.cronJobForm = {
             id: job.id,
             name: job.name,
@@ -57,6 +61,10 @@ const CronJobsMethods = {
     // Cancel cron job editing
     cancelCronJobEdit() {
         this.editingCronJob = false;
+        this.cronHostSearchQuery = '';
+        this.cronGroupSearchQuery = '';
+        this.cronTemplateSearchQuery = '';
+        this.cronTemplateDropdownOpen = false;
         this.cronJobForm = { 
             id: null, 
             name: '', 
