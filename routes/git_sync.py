@@ -231,6 +231,7 @@ def export_to_git():
                 'name': template.name,
                 'filename': filename,
                 'script_type': template.script_type or 'bash',
+                'arguments': template.arguments,
                 'created_at': template.created_at.isoformat() if template.created_at else None
             })
         
@@ -342,6 +343,7 @@ def import_from_git():
                     filename = entry.get('filename')
                     name = entry.get('name')
                     script_type = entry.get('script_type', 'bash')
+                    arguments = entry.get('arguments')
                     
                     filepath = os.path.join(scripts_dir, filename)
                     if not os.path.exists(filepath):
@@ -358,6 +360,7 @@ def import_from_git():
                         if overwrite:
                             existing.content = content
                             existing.script_type = script_type
+                            existing.arguments = arguments
                             imported += 1
                         else:
                             skipped += 1
@@ -365,7 +368,8 @@ def import_from_git():
                         new_template = Template(
                             name=name,
                             content=content,
-                            script_type=script_type
+                            script_type=script_type,
+                            arguments=arguments
                         )
                         db.session.add(new_template)
                         imported += 1
