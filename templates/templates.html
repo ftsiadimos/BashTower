@@ -7,17 +7,17 @@
             <h1 class="text-2xl font-bold text-gray-800">Templates</h1>
             <p class="text-gray-500 mt-1">Manage your script templates (Bash & Python)</p>
         </div>
-        <div class="flex items-center gap-3">
-            <div class="relative">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div class="relative w-full sm:w-64">
                 <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 <input type="text" v-model="templateSearchQuery" placeholder="Search templates..." 
-                    class="pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg w-64 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition">
+                    class="pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition">
             </div>
-            <button @click="openGitSyncModal" class="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition font-medium flex items-center gap-2 shadow-md">
-                <i class="fab fa-git-alt"></i> Git Sync
+            <button @click="openGitSyncModal" class="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition font-medium flex items-center justify-center gap-2 shadow-md">
+                <i class="fab fa-git-alt"></i> <span>Git Sync</span>
             </button>
-            <button @click="startNewTemplate" class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-medium flex items-center gap-2 shadow-md">
-                <i class="fas fa-plus"></i> Create Template
+            <button @click="startNewTemplate" class="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition font-medium flex items-center justify-center gap-2 shadow-md">
+                <i class="fas fa-plus"></i> <span>Create Template</span>
             </button>
         </div>
     </div>
