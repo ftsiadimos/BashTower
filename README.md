@@ -55,6 +55,20 @@
 | ✨ **AI Script Assistant** | Generate, improve, and debug scripts using AI directly in the editor |
 | 🛰️ **Red Hat Satellite Sync** | Auto-import host inventory from Satellite API |
 
+### Full Backup (Git) 🔁
+BashTower can create a **full backup** of your instance and store it in a Git repository. The backup is written to a dedicated `backup` branch and includes:
+
+- Templates (scripts in `scripts/`), plus a `bashtower_backup.json` manifest and a `README.md` with statistics
+- Hosts and Host Groups
+- Cron jobs (with template and key mapping)
+- SSH keys (private keys are excluded by default; can be included if you opt in)
+- Users (password hashes excluded by default; can be included if you opt in)
+- Application settings (AI config, `auth_disabled`, `cron_history_limit`); API keys included only when sensitive data option is enabled
+
+Security note: sensitive data (SSH private keys, user passwords, API keys, Satellite passwords) are **excluded by default**. Enable the **Include Sensitive Data** option in the UI to include them (only do this for private repositories you fully control).
+
+You can also restore a full backup from the `backup` branch via the Git Sync UI. When restoring you may choose to overwrite existing data (be cautious; this can modify current hosts, templates, cron jobs, SSH keys and users).
+
 ### User Experience
 | Feature | Description |
 |---------|-------------|
