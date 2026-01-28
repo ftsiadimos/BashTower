@@ -155,9 +155,14 @@ const JobsMethods = {
         const logIndex = this.activeJob.logs.findIndex(l => l.hostname === log.hostname);
         if (logIndex === -1) return;
         
-        // Reset any previous commands and show loading text
-        this.activeJob.logs[logIndex].aiCommands = null;
-        this.activeJob.logs[logIndex].aiAnalysis = 'Analyzing error...';
+        // Store reference to the log and open modal
+        this.activeTroubleshootLog = {
+            ...log,
+            templateName: templateName,
+            aiAnalysis: 'Analyzing error...',
+            aiCommands: null
+        };
+        this.viewingTroubleshoot = true;
         this.llmLoading = true;
         
         const prompt = `Analyze the following execution logs to determine the root cause of the error. Provide a concise explanation and a specific resolution step in markdown format. If appropriate, include example commands in fenced code blocks or under a 'Recommended commands' heading.\nTemplate Name: ${templateName}\nHostname: ${log.hostname}\nStatus: ${log.status}\n---\nSCRIPT STDOUT:\n${log.stdout || '(empty)'}\n---\nSCRIPT STDERR:\n${log.stderr || '(empty)'}\n---`;
@@ -172,45 +177,18 @@ const JobsMethods = {
             const result = await response.json();
 
             if (response.ok && result.analysis) {
-                let analysisText = (result.analysis || '').trim();
-                const commands = [];
-
-                // Extract fenced code blocks (``` ... ```) for commands
-                analysisText = analysisText.replace(/```(?:bash|sh)?\n([\s\S]*?)```/g, (match, p1) => {
-                    const cmd = p1.trim();
-                    if (cmd) commands.push(cmd);
-                    return '\n';
-                });
-
-                // Extract indented blocks (4+ spaces or tabs)
-                analysisText = analysisText.replace(/(?:\n((?: {4}|\t).*(?:\n|$))+)/g, (match) => {
-                    const lines = match.split('\n').map(l => l.replace(/^( {4}|\t)/, '')).filter(Boolean);
-                    if (lines.length) {
-                        const cmd = lines.join('\n').trim();
-                        if (cmd) commands.push(cmd);
-                        return '\n';
-                    }
-                    return match;
-                });
-
-                // Look for explicit 'Recommended commands' or similar sections
-                const recSection = analysisText.match(/(?:Recommended commands|Suggested commands|Commands to run)[:\s]*\n([\s\S]*)/i);
-                if (recSection && recSection[1]) {
-                    const block = recSection[1].split('\n').map(l => l.trim()).filter(Boolean).join('\n');
-                    if (block) {
-                        commands.push(block);
-                    }
-                    // Remove the section from analysis text
-                    analysisText = analysisText.replace(recSection[0], '');
-                }
-
-                this.activeJob.logs[logIndex].aiAnalysis = analysisText.trim() || 'No analysis summary available.';
-                this.activeJob.logs[logIndex].aiCommands = commands.length ? commands : null;
+                // Keep the full analysis text without extracting commands
+                const analysis = (result.analysis || '').trim() || 'No analysis summary available.';
+                
+                this.activeTroubleshootLog.aiAnalysis = analysis;
+                this.activeTroubleshootLog.aiCommands = null;
             } else {
-                this.activeJob.logs[logIndex].aiAnalysis = `Error: ${result.message || result.error || 'Could not retrieve analysis.'}`;
+                const errorMsg = `Error: ${result.message || result.error || 'Could not retrieve analysis.'}`;
+                this.activeTroubleshootLog.aiAnalysis = errorMsg;
             }
         } catch (error) {
-            this.activeJob.logs[logIndex].aiAnalysis = `Network error during analysis: ${error.message}`;
+            const errorMsg = `Network error during analysis: ${error.message}`;
+            this.activeTroubleshootLog.aiAnalysis = errorMsg;
         } finally {
             this.llmLoading = false;
         }

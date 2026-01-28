@@ -63,3 +63,31 @@ textarea {
 #template-preview .hljs-comment {
     color: #6272a4 !important; /* muted blue-gray */
 }
+
+/* AI Analysis Modal - Force text wrapping */
+.prose {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.prose pre {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    max-width: 100% !important;
+}
+
+.prose code {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.prose p, .prose li, .prose td, .prose th {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.prose * {
+    max-width: 100% !important;
+}

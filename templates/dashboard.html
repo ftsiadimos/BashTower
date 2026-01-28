@@ -386,37 +386,6 @@
 
                 <!-- Log Output -->
                 <div class="bg-slate-950 p-4 font-mono text-sm overflow-x-auto max-h-64 overflow-y-auto">
-                    <div v-if="log.aiAnalysis || log.aiCommands" class="mb-4 p-4 bg-purple-900/40 border-l-4 border-purple-600 rounded-lg">
-                        <div class="flex items-center justify-between gap-3 mb-3">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-magic text-purple-300"></i>
-                                <span class="text-purple-200 text-sm font-semibold">AI Analysis</span>
-                                <span v-if="log.aiCommands && log.aiCommands.length" class="ml-2 px-2 py-0.5 text-xs bg-purple-800/40 rounded text-purple-100">[[ log.aiCommands.length ]] cmd(s)</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button v-if="log.aiAnalysis" @click="copyToClipboard(log.aiAnalysis)" class="text-xs px-2 py-1 bg-purple-800/50 text-purple-200 rounded hover:bg-purple-700/60">Copy Summary</button>
-                                <button v-if="log.aiCommands && log.aiCommands.length" @click="copyToClipboard(log.aiCommands.join('\n\n'))" class="text-xs px-2 py-1 bg-purple-800/50 text-purple-200 rounded hover:bg-purple-700/60">Copy Commands</button>
-                            </div>
-                        </div>
-
-                        <div v-if="log.aiCommands && log.aiCommands.length" class="mb-3">
-                            <div class="flex items-center gap-2 mb-2 text-sm font-semibold text-purple-200">
-                                <i class="fas fa-terminal text-purple-300"></i>
-                                <span>Command Recommendations</span>
-                            </div>
-
-                            <div class="space-y-2">
-                                <div v-for="(cmd, idx) in log.aiCommands" :key="idx" class="bg-slate-900 p-3 rounded flex items-start justify-between gap-3">
-                                    <pre class="text-sm text-green-200 whitespace-pre-wrap flex-1 mr-3">[[ cmd ]]</pre>
-                                    <div class="flex flex-col gap-2">
-                                        <button @click="copyToClipboard(cmd)" class="text-xs px-2 py-1 bg-slate-800/60 text-white rounded hover:bg-slate-700">Copy</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div v-if="log.aiAnalysis" class="text-gray-300 text-sm prose prose-invert prose-sm max-w-none" v-html="renderMarkdown(log.aiAnalysis)"></div>
-                    </div>
                     <div v-if="log.stdout" class="mb-3">
                         <div class="flex items-center gap-2 mb-2">
                             <div class="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -435,6 +404,118 @@
                     
 
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Troubleshoot Modal -->
+    <div v-if="viewingTroubleshoot && activeTroubleshootLog" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4" @click.self="viewingTroubleshoot = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 bg-gradient-to-r from-purple-700 to-purple-900">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-magic text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-lg">AI Troubleshooting Analysis</h3>
+                            <p class="text-white/70 text-sm">Error analysis for [[ activeTroubleshootLog.templateName ]]</p>
+                        </div>
+                    </div>
+                    <button @click="viewingTroubleshoot = false" class="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+                
+                <!-- Host & Status Info -->
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="text-white/70 flex items-center gap-1">
+                        <i class="fas fa-server"></i> [[ activeTroubleshootLog.host_name || activeTroubleshootLog.hostname ]]
+                    </span>
+                    <span class="text-white/50">•</span>
+                    <span :class="{
+                        'px-2.5 py-1 text-xs font-semibold rounded-full': true,
+                        'bg-red-500 text-white': activeTroubleshootLog.status === 'error' || activeTroubleshootLog.status === 'failed' || activeTroubleshootLog.status === 'connection_failed'
+                    }">[[ activeTroubleshootLog.status ]]</span>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 overflow-auto bg-slate-50">
+                <!-- AI Analysis Section -->
+                <div class="p-6">
+                    <div class="bg-white rounded-xl border border-purple-200 shadow-sm overflow-hidden">
+                        <div class="p-4 bg-purple-50 border-b border-purple-200">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <i class="fas fa-magic text-purple-600"></i>
+                                    <span class="text-purple-900 font-semibold">AI Analysis</span>
+                                    <span v-if="llmLoading" class="ml-2 px-2 py-0.5 text-xs bg-purple-200 text-purple-800 rounded">Analyzing...</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button v-if="activeTroubleshootLog.aiAnalysis && !llmLoading" @click="copyToClipboard(activeTroubleshootLog.aiAnalysis)" 
+                                        class="text-xs px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-1">
+                                        <i class="fas fa-copy"></i> Copy Analysis
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                            <div v-if="llmLoading" class="flex items-center justify-center py-12">
+                                <div class="text-center">
+                                    <i class="fas fa-spinner fa-spin text-purple-600 text-3xl mb-3"></i>
+                                    <p class="text-gray-600">Analyzing error logs...</p>
+                                </div>
+                            </div>
+                            <div v-else class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-6 border border-purple-100">
+                                <div class="prose prose-purple max-w-none" v-html="renderMarkdown(activeTroubleshootLog.aiAnalysis || 'No analysis available.')" style="word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Original Error Logs -->
+                    <div class="mt-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="p-4 bg-slate-700 border-b">
+                            <div class="flex items-center gap-2">
+                                <i class="fas fa-terminal text-white"></i>
+                                <span class="text-white font-semibold">Error Logs</span>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-slate-950 space-y-4">
+                            <!-- Stdout -->
+                            <div v-if="activeTroubleshootLog.stdout">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span class="text-green-400 font-mono text-xs font-semibold">STDOUT</span>
+                                </div>
+                                <pre class="text-green-400 whitespace-pre-wrap font-mono text-sm leading-relaxed bg-slate-900/50 rounded-lg p-4 max-h-64 overflow-auto">[[ stripAnsi(activeTroubleshootLog.stdout) ]]</pre>
+                            </div>
+
+                            <!-- Stderr -->
+                            <div v-if="activeTroubleshootLog.stderr">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                                    <span class="text-red-400 font-mono text-xs font-semibold">STDERR</span>
+                                </div>
+                                <pre class="text-red-400 whitespace-pre-wrap font-mono text-sm leading-relaxed bg-red-950/30 border border-red-900/30 rounded-lg p-4 max-h-64 overflow-auto">[[ stripAnsi(activeTroubleshootLog.stderr) ]]</pre>
+                            </div>
+
+                            <div v-if="!activeTroubleshootLog.stdout && !activeTroubleshootLog.stderr" class="text-gray-500 italic text-center py-4">No output captured</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+                <div class="text-xs text-slate-500 flex items-center gap-2">
+                    <i class="fas fa-server"></i>
+                    <span>Host: [[ activeTroubleshootLog.hostname ]]</span>
+                </div>
+                <button @click="viewingTroubleshoot = false" class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition font-medium text-sm">
+                    Close
+                </button>
             </div>
         </div>
     </div>
