@@ -91,6 +91,8 @@ const App = {
 
             // --- AI Troubleshooter ---
             llmLoading: false,
+            viewingTroubleshoot: false,
+            activeTroubleshootLog: null,
 
             // --- AI Script Assistant (moved to Templates module)
 
