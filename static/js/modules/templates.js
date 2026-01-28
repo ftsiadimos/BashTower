@@ -41,9 +41,15 @@ const TemplatesData = () => ({
     gitExportLoading: false,
     gitImportLoading: false,
     gitPreviewLoading: false,
+    gitBackupLoading: false,
+    gitRestoreLoading: false,
     gitSyncMessage: '',
     gitImportOverwrite: false,
-    gitImportPreview: null
+    gitRestoreOverwrite: false,
+    gitBackupIncludeSensitive: false,
+    gitImportPreview: null,
+    backupStats: null,
+    showRefreshButton: false
 });
 
 // Computed properties related to templates
@@ -396,7 +402,9 @@ const TemplatesMethods = {
         this.gitSyncModalOpen = true;
         this.gitSyncMessage = '';
         this.gitImportPreview = null;
+        this.showRefreshButton = false;
         await this.fetchGitConfig();
+        await this.fetchBackupStats();
     },
 
     // Close Git Sync modal
@@ -421,6 +429,27 @@ const TemplatesMethods = {
         } catch (error) {
             console.error('Error fetching Git config:', error);
             this.gitSyncMessage = 'Error: Failed to load Git configuration';
+        }
+    },
+
+    // Fetch backup statistics (hosts and groups count)
+    async fetchBackupStats() {
+        try {
+            // Fetch hosts count
+            const hostsResponse = await fetch(API.HOSTS);
+            const hosts = await hostsResponse.json();
+            
+            // Fetch groups count
+            const groupsResponse = await fetch(API.GROUPS);
+            const groups = await groupsResponse.json();
+            
+            this.backupStats = {
+                hosts: hosts.length || 0,
+                groups: groups.length || 0
+            };
+        } catch (error) {
+            console.error('Error fetching backup stats:', error);
+            this.backupStats = { hosts: 0, groups: 0 };
         }
     },
 
@@ -577,5 +606,100 @@ const TemplatesMethods = {
         } finally {
             this.gitImportLoading = false;
         }
+    },
+
+    // Backup everything to Git
+    async backupToGit() {
+        const confirmMsg = this.gitBackupIncludeSensitive
+            ? 'This will create a full backup INCLUDING SENSITIVE DATA (SSH keys, passwords, API tokens) to the backup branch. Make sure your repository is private! Continue?'
+            : 'This will create a full backup of all templates, hosts, groups, and configuration (excluding sensitive data) to the backup branch. Continue?';
+        
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        
+        this.gitBackupLoading = true;
+        this.gitSyncMessage = '';
+        
+        try {
+            const response = await fetch('/api/git/backup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    include_sensitive: this.gitBackupIncludeSensitive
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.gitSyncMessage = data.message;
+                if (data.stats) {
+                    this.gitSyncMessage += `\n\nBacked up: ${data.stats.templates} templates, ${data.stats.hosts} hosts, ${data.stats.groups} groups, ${data.stats.ssh_keys} SSH keys, ${data.stats.cron_jobs} cron jobs, ${data.stats.users} users`;
+                    if (data.stats.app_settings_included) {
+                        this.gitSyncMessage += '\n✓ App Settings: AI config, Login settings, Cron history limit';
+                    }
+                    if (data.stats.satellite_config_included) {
+                        this.gitSyncMessage += '\n✓ Satellite/Foreman configuration';
+                    }
+                    if (data.stats.sensitive_data_included) {
+                        this.gitSyncMessage += '\n⚠️ Sensitive data INCLUDED (SSH keys, passwords, API tokens)';
+                    }
+                }
+                this.backupStats = data.stats;
+            } else {
+                this.gitSyncMessage = 'Error: ' + (data.error || 'Backup failed');
+            }
+        } catch (error) {
+            this.gitSyncMessage = 'Error: ' + error.message;
+        } finally {
+            this.gitBackupLoading = false;
+        }
+    },
+
+    // Restore everything from Git
+    async restoreFromGit() {
+        const confirmMsg = this.gitRestoreOverwrite 
+            ? 'This will restore data from backup and OVERWRITE existing data with the same names. This cannot be undone! Continue?'
+            : 'This will restore data from backup. Existing data with the same names will be skipped. Continue?';
+        
+        if (!confirm(confirmMsg)) {
+            return;
+        }
+        
+        this.gitRestoreLoading = true;
+        this.gitSyncMessage = '';
+        
+        try {
+            const response = await fetch('/api/git/restore', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    overwrite: this.gitRestoreOverwrite
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.gitSyncMessage = data.message;
+                if (data.stats && data.stats.errors && data.stats.errors.length > 0) {
+                    this.gitSyncMessage += '\n\nWarnings: ' + data.stats.errors.join(', ');
+                }
+                await this.fetchTemplates(); // Refresh templates list
+                this.showRefreshButton = true; // Show refresh button
+            } else {
+                this.gitSyncMessage = 'Error: ' + (data.error || 'Restore failed');
+            }
+        } catch (error) {
+            this.gitSyncMessage = 'Error: ' + error.message;
+        } finally {
+            this.gitRestoreLoading = false;
+        }
+    },
+
+    // Refresh the page
+    refreshPage() {
+        window.location.reload();
     }
 };

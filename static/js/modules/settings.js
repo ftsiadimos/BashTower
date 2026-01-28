@@ -164,5 +164,19 @@ const SettingsMethods = {
                 this.settingsMessage = '';
             }, 3000);
         }
+    },
+
+    // Open Git Backup modal from settings
+    openGitBackup() {
+        // Switch to templates view
+        this.currentView = 'templates';
+        // Wait for view to render, then open modal
+        this.$nextTick(() => {
+            if (typeof this.openGitSyncModal === 'function') {
+                this.openGitSyncModal();
+                // Switch to backup tab
+                this.gitSyncTab = 'backup';
+            }
+        });
     }
 };

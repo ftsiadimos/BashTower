@@ -302,6 +302,29 @@
                 </div>
             </div>
 
+            <!-- Git Backup Quick Access -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="p-4 bg-gradient-to-r from-orange-500 to-red-500">
+                    <h3 class="font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-database"></i> Backup & Restore
+                    </h3>
+                </div>
+                <div class="p-4 space-y-3">
+                    <p class="text-sm text-gray-600">
+                        Create a complete backup of all templates, hosts, groups, cron jobs, and configuration to Git.
+                    </p>
+                    <button @click="openGitBackup" 
+                        class="w-full px-4 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition font-medium flex items-center justify-center gap-2">
+                        <i class="fas fa-database"></i>
+                        Open Full Backup
+                    </button>
+                    <p class="text-xs text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Backup to Git repository with optional sensitive data encryption
+                    </p>
+                </div>
+            </div>
+
             <!-- Authentication Settings -->
             <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                 <div class="p-4 bg-gradient-to-r from-indigo-500 to-purple-600">
