@@ -60,6 +60,40 @@
             margin-right:1px;
         }
         @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* Tooltips for collapsed sidebar: show label text on hover */
+        .sidebar-collapsed a[title]:hover::after,
+        .sidebar-collapsed button[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            left: calc(100% + 8px);
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(17,24,39,0.95);
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 6px;
+            white-space: nowrap;
+            font-size: 0.8rem;
+            z-index: 9999;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+        .sidebar-collapsed a[title]:hover::before,
+        .sidebar-collapsed button[title]:hover::before {
+            content: "";
+            position: absolute;
+            left: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent rgba(17,24,39,0.95) transparent transparent;
+            z-index: 9998;
+        }
+        /* Ensure elements provide positioning for tooltip */
+        .sidebar-collapsed a[title],
+        .sidebar-collapsed button[title] { position: relative; }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 h-screen overflow-hidden">
@@ -73,47 +107,83 @@
 
     <div id="app" class="flex h-full" v-cloak>
         <!-- Sidebar Navigation -->
-        <div class="w-64 bg-slate-800 text-white flex flex-col">
-            <div class="p-4 text-2xl font-bold border-b border-slate-700">
-                <a href="#" onclick="location.reload();" class="flex items-center text-white no-underline">
-                    <i class="fas fa-tower-broadcast mr-2"></i>
-                    <span>Bash Tower</span>
+        <div :class="['bg-slate-800 text-white flex flex-col transition-all duration-200', sidebarCollapsed ? 'w-16 sidebar-collapsed' : 'w-64']">
+            <div class="p-4 text-2xl font-bold border-b border-slate-700 flex items-center justify-between relative">
+                <a href="#" title="Bash Tower" onclick="location.reload();" class="flex items-center text-white no-underline">
+                    <i :class="['fas fa-tower-broadcast', sidebarCollapsed ? '' : 'mr-2']"></i>
+                    <span class="ml-2 overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out" :style="{ maxWidth: sidebarCollapsed ? '0px' : '8rem', opacity: sidebarCollapsed ? 0 : 1 }" aria-hidden="true">Bash Tower</span>
                 </a>
+                <button @click="toggleSidebar" class="text-slate-300 hover:text-white p-2 rounded-full right-2 top-2 absolute z-20 bg-slate-700 hover:bg-slate-600 transition-colors transform" :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'" :aria-expanded="!sidebarCollapsed" aria-label="Toggle sidebar">
+                    <i class="fas fa-angle-double-left transition-transform duration-200" :class="sidebarCollapsed ? 'rotate-180' : 'rotate-0'"></i>
+                </button>
             </div>
             <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
                 <!-- Navigation Buttons -->
-                <button @click="currentView = 'dashboard'" :class="currentView === 'dashboard' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-tachometer-alt w-6"></i> <span>Dashboard</span>
+                <button @click="currentView = 'dashboard'" :class="[currentView === 'dashboard' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Dashboard">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-tachometer-alt text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Dashboard</span>
                 </button>
-                <button @click="currentView = 'templates'" :class="currentView === 'templates' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-file-code w-6"></i> <span>Templates</span>
+                <button @click="currentView = 'templates'" :class="[currentView === 'templates' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Templates">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-file-code text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Templates</span>
                 </button>
-                <button @click="currentView = 'cronjobs'" :class="currentView === 'cronjobs' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-clock w-6"></i> <span>Cron Jobs</span>
+                <button @click="currentView = 'cronjobs'" :class="[currentView === 'cronjobs' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Cron Jobs">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-clock text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Cron Jobs</span>
                 </button>
-                <button @click="currentView = 'cronHistory'" :class="currentView === 'cronHistory' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-history w-6"></i> <span>Cron History</span>
+                <button @click="currentView = 'cronHistory'" :class="[currentView === 'cronHistory' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Cron History">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-history text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Cron History</span>
                 </button>
-                <button @click="currentView = 'hosts'" :class="currentView === 'hosts' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-server w-6"></i> <span>Hosts</span>
+                <button @click="currentView = 'hosts'" :class="[currentView === 'hosts' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Hosts">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-server text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Hosts</span>
                 </button>
-                <button @click="currentView = 'groups'" :class="currentView === 'groups' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-layer-group w-6"></i> <span>Host Groups</span>
+                <button @click="currentView = 'groups'" :class="[currentView === 'groups' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Host Groups">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-layer-group text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Host Groups</span>
                 </button>
-                <button @click="currentView = 'keys'" :class="currentView === 'keys' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-key w-6"></i> <span>SSH Keys</span>
+                <button @click="currentView = 'keys'" :class="[currentView === 'keys' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="SSH Keys">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-key text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">SSH Keys</span>
                 </button>
-                <button @click="currentView = 'satellite'" :class="currentView === 'satellite' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-satellite-dish w-6"></i> <span>Satellite Sync</span>
+                <button @click="currentView = 'satellite'" :class="[currentView === 'satellite' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Satellite Sync">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-satellite-dish text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Satellite Sync</span>
                 </button>
-                <button @click="currentView = 'settings'" :class="currentView === 'settings' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-cog w-6"></i> <span>Settings</span>
+                <button @click="currentView = 'settings'" :class="[currentView === 'settings' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Settings">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-cog text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Settings</span>
                 </button>
-                <button v-if="currentUser && currentUser.is_admin" @click="currentView = 'users'" :class="currentView === 'users' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-users-cog w-6"></i> <span>Users</span>
+                <button v-if="currentUser && currentUser.is_admin" @click="currentView = 'users'" :class="[currentView === 'users' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Users">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-users-cog text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Users</span>
                 </button>
-                <button @click="currentView = 'about'" :class="currentView === 'about' ? 'bg-blue-600' : 'hover:bg-slate-700'" class="w-full text-left p-2 rounded transition flex items-center">
-                    <i class="fas fa-info-circle w-6"></i> <span>About</span>
+                <button @click="currentView = 'about'" :class="[currentView === 'about' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="About">
+                    <span class="flex items-center justify-center w-6">
+                        <i class="fas fa-info-circle text-lg leading-none"></i>
+                    </span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">About</span>
                 </button>
             </nav>
         </div>
@@ -124,7 +194,7 @@
                 <h2 class="text-xl font-semibold capitalize">[[ currentView === 'cronHistory' ? 'Cron History' : currentView ]]</h2>
                 <div class="flex items-center gap-4">
                     <div v-if="currentUser" class="flex items-center gap-2 text-gray-600">
-                        <i class="fas fa-user-circle text-lg"></i>
+                        <i class="fas fa-user-circle text-lg leading-none"></i>
                         <span class="text-sm font-medium">[[ currentUser.username ]]</span>
                         <span v-if="currentUser.is_admin" class="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-xs rounded-full">
                             <i class="fas fa-crown mr-1"></i>Admin

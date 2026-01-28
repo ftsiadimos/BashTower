@@ -158,6 +158,9 @@ const App = {
             currentUser: null,
             authDisabled: false,
 
+            // --- Sidebar state ---
+            sidebarCollapsed: false,
+
             // --- User Management (moved to module)
             ...UsersData(),
 
@@ -416,6 +419,20 @@ const App = {
         // Fetch current user info
         this.checkAuth();
         
+        // Restore persisted sidebar state (if present) or collapse on mobile
+        try {
+            const sc = localStorage.getItem('sidebarCollapsed');
+            if (sc !== null) {
+                this.sidebarCollapsed = sc === 'true';
+            } else {
+                // Auto-collapse on mobile screens (width < 768px)
+                this.sidebarCollapsed = window.innerWidth < 768;
+            }
+        } catch (e) {
+            // ignore localStorage errors in strict environments
+            this.sidebarCollapsed = window.innerWidth < 768;
+        }
+
         // Load essential data for dashboard
         this.loadViewData('dashboard');
         
@@ -475,6 +492,16 @@ const App = {
     // Methods - Combined from all modules
     // ========================================================================
     methods: {
+        // --------------------------------------------------------------------
+        // Sidebar Toggle
+        // --------------------------------------------------------------------
+        toggleSidebar() {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            try {
+                localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed);
+            } catch (e) { /* ignore */ }
+        },
+
         // --------------------------------------------------------------------
         // Smart Polling Setup
         // --------------------------------------------------------------------
