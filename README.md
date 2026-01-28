@@ -138,19 +138,8 @@ docker-compose up -d
 - Docker Engine (for containerized deployment)
 - SSH access to target hosts
 
-### Option 1: Docker (Recommended)
 
-```bash
-# Clone the repository
-git clone https://github.com/ftsiadimos/BashTower.git
-cd BashTower
-
-# Build and run
-docker build -t bashtower .
-docker run -d --name bashtower -p 1008:1008 -v \$(pwd)/instance:/app/instance bashtower
-```
-
-### Option 2: Local Installation
+### Option 1: Local Installation
 
 ```bash
 # Clone the repository
@@ -168,7 +157,7 @@ pip install -r requirements.txt
 flask run --host=0.0.0.0 --port=1008
 ```
 
-### Option 3: Development Setup
+### Option 2: Development Setup
 
 ```bash
 # Clone and setup
@@ -395,27 +384,27 @@ GET /api/jobs/{id}
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                        Browser                               │
+│                        Browser                              │
 │                   (Vue.js 3 + Tailwind)                     │
 └─────────────────────────┬───────────────────────────────────┘
                           │ HTTP/REST
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    Flask Application                         │
+│                    Flask Application                        │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │   Routes    │  │  Services   │  │    APScheduler      │  │
 │  │  /api/*     │  │  SSH Exec   │  │   (Cron Jobs)       │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-│                          │                                   │
+│                          │                                  │
 │  ┌─────────────────────────────────────────────────────────┐│
-│  │              SQLAlchemy ORM                              ││
-│  │         (SQLite / PostgreSQL)                            ││
+│  │              SQLAlchemy ORM                             ││
+│  │         (SQLite / PostgreSQL)                           ││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────┬───────────────────────────────────┘
                           │ SSH (Paramiko)
                           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     Remote Hosts                             │
+│                     Remote Hosts                            │
 │         (Linux servers, VMs, containers, etc.)              │
 └─────────────────────────────────────────────────────────────┘
 ```
