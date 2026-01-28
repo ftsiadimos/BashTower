@@ -26,21 +26,10 @@
 
 ## 📸 Screenshots
 
-<div style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;align-items:flex-start;">
-  <figure style="border:1px solid #e5e7eb;padding:8px;border-radius:8px;box-shadow:0 6px 18px rgba(15,23,42,0.08);max-width:48%;min-width:320px;">
-    <a href="mis/image1.png" target="_blank">
-      <img src="mis/image1.png" alt="Dashboard View" style="display:block;max-width:100%;height:auto;border-radius:4px;">
-    </a>
-    <figcaption style="text-align:center;font-size:0.9rem;color:#6b7280;margin-top:6px;">Dashboard overview</figcaption>
-  </figure>
-
-  <figure style="border:1px solid #e5e7eb;padding:8px;border-radius:8px;box-shadow:0 6px 18px rgba(15,23,42,0.08);max-width:48%;min-width:320px;">
-    <a href="mis/image2.png" target="_blank">
-      <img src="mis/image2.png" alt="Additional Screenshot" style="display:block;max-width:100%;height:auto;border-radius:4px;">
-    </a>
-    <figcaption style="text-align:center;font-size:0.9rem;color:#6b7280;margin-top:6px;">AI Troubleshooter modal</figcaption>
-  </figure>
-</div>
+| Dashboard overview | AI Troubleshooter modal |
+| --- | --- |
+| <a href="mis/image1.png" target="_blank"><img src="mis/image1.png" width="420" alt="Dashboard View"></a> | <a href="mis/image2.png" target="_blank"><img src="mis/image2.png" width="420" alt="AI Troubleshooter modal"></a> |
+| *Templates overview* | *AI Troubleshooter modal* |
 
 ---
 
