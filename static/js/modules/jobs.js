@@ -192,5 +192,11 @@ const JobsMethods = {
         } finally {
             this.llmLoading = false;
         }
+    },
+
+    // Open a modal to view the full stdout/stderr for a single log
+    viewLogOutput(log) {
+        this.activeLogOutput = { ...log };
+        this.viewingLogOutput = true;
     }
 };
