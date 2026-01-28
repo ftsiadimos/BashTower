@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>A lightweight, web-based remote script execution platform for home labs</strong><br>
-  Designed for hobbyists and home lab enthusiasts managing a small number of servers
+  Designed for hobbyists managing their own servers—simple, fast, and fun 
 </p>
 
 <p align="center">
