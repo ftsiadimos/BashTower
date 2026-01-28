@@ -1,3 +1,6 @@
+// Copyright (C) 2025 Fotios Tsiadimos
+// SPDX-License-Identifier: GPL-3.0-only
+//
 // Template Management Module
 // Methods and reactive state for managing script templates
 

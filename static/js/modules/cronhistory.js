@@ -1,3 +1,6 @@
+// Copyright (C) 2025 Fotios Tsiadimos
+// SPDX-License-Identifier: GPL-3.0-only
+//
 // Cron History Module
 // Methods for viewing cron job execution history
 

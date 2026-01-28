@@ -1,3 +1,6 @@
+// Copyright (C) 2025 Fotios Tsiadimos
+// SPDX-License-Identifier: GPL-3.0-only
+//
 // Host Management Module
 // Methods, data and computed for managing remote hosts
 
