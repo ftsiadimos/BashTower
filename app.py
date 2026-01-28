@@ -1,9 +1,12 @@
+# Copyright (C) 2025 Fotios Tsiadimos
+# SPDX-License-Identifier: GPL-3.0-only
+#
 # ============================================================================
 # BashTower - Main Application Entry Point
 # ============================================================================
 # This file initializes the Flask application and registers all blueprints.
 # The actual route handlers are organized in the /routes directory.
-# ============================================================================
+# ===========================================================================
 
 import os
 import atexit
