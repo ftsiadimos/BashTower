@@ -108,12 +108,12 @@
     <div id="app" class="flex h-full" v-cloak>
         <!-- Sidebar Navigation -->
         <div :class="['bg-slate-800 text-white flex flex-col transition-all duration-200', sidebarCollapsed ? 'w-16 sidebar-collapsed' : 'w-64']">
-            <div class="p-4 text-2xl font-bold border-b border-slate-700 flex items-center justify-between relative">
-                <a href="#" title="Bash Tower" onclick="location.reload();" class="flex items-center text-white no-underline">
-                    <i :class="['fas fa-tower-broadcast', sidebarCollapsed ? '' : 'mr-2']"></i>
-                    <span class="ml-2 overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out" :style="{ maxWidth: sidebarCollapsed ? '0px' : '8rem', opacity: sidebarCollapsed ? 0 : 1 }" aria-hidden="true">Bash Tower</span>
+            <div class="p-4 text-2xl font-bold border-b border-slate-700 flex items-center" :class="sidebarCollapsed ? 'justify-center' : 'relative'">
+                <a href="#" title="Bash Tower" onclick="location.reload();" class="flex items-center text-white no-underline flex-1 overflow-hidden" v-show="!sidebarCollapsed">
+                    <i class="fas fa-tower-broadcast flex-shrink-0 mr-2"></i>
+                    <span class="ml-2 overflow-hidden whitespace-nowrap">Bash Tower</span>
                 </a>
-                <button @click="toggleSidebar" class="text-slate-300 hover:text-white p-2 rounded-full right-2 top-2 absolute z-20 bg-slate-700 hover:bg-slate-600 transition-colors transform" :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'" :aria-expanded="!sidebarCollapsed" aria-label="Toggle sidebar">
+                <button @click="toggleSidebar" class="text-slate-300 hover:text-white p-2 rounded-full flex-shrink-0 bg-slate-700 hover:bg-slate-600 transition-colors" :class="sidebarCollapsed ? '' : 'ml-2'" :title="sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'" :aria-expanded="!sidebarCollapsed" aria-label="Toggle sidebar">
                     <i class="fas fa-angle-double-left transition-transform duration-200" :class="sidebarCollapsed ? 'rotate-180' : 'rotate-0'"></i>
                 </button>
             </div>
@@ -165,7 +165,7 @@
                     <span class="flex items-center justify-center w-6">
                         <i class="fas fa-satellite-dish text-lg leading-none"></i>
                     </span>
-                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '6rem', opacity: sidebarCollapsed ? 0 : 1 }">Satellite Sync</span>
+                    <span :class="[sidebarCollapsed ? 'ml-0' : 'ml-3', 'overflow-hidden whitespace-nowrap transition-all duration-200 ease-in-out']" :style="{ maxWidth: sidebarCollapsed ? '0px' : '8rem', opacity: sidebarCollapsed ? 0 : 1 }">Satellite Sync</span>
                 </button>
                 <button @click="currentView = 'settings'" :class="[currentView === 'settings' ? 'bg-blue-600' : 'hover:bg-slate-700', 'w-full p-2 transition flex items-center', sidebarCollapsed ? 'justify-center rounded-full' : 'justify-start rounded']" title="Settings">
                     <span class="flex items-center justify-center w-6">
