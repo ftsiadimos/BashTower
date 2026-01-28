@@ -93,6 +93,9 @@ const App = {
             llmLoading: false,
             viewingTroubleshoot: false,
             activeTroubleshootLog: null,
+            // Single Log Output Modal
+            viewingLogOutput: false,
+            activeLogOutput: null,
 
             // --- AI Script Assistant (moved to Templates module)
 

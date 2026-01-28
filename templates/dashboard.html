@@ -377,6 +377,10 @@
                             'px-2.5 py-1 rounded-full text-xs font-semibold',
                             log.status === 'success' ? 'bg-green-100 text-green-700' : (log.status === 'running' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700')
                         ]">[[ log.status ]]</span>
+                        <button @click="viewLogOutput(log)" 
+                            class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition text-xs font-medium flex items-center gap-1">
+                            <i class="fas fa-list"></i> View Output
+                        </button>
                         <button v-if="log.status !== 'success' && log.status !== 'running'" @click="analyzeError(log, activeJob.template_name)" 
                             class="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition text-xs font-medium flex items-center gap-1">
                             <i class="fas fa-magic"></i> Troubleshoot
@@ -516,6 +520,69 @@
                 <button @click="viewingTroubleshoot = false" class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition font-medium text-sm">
                     Close
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Output Modal -->
+    <div v-if="viewingLogOutput && activeLogOutput" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[62] flex items-center justify-center p-4" @click.self="viewingLogOutput = false">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-5 bg-gradient-to-r from-slate-700 to-slate-900">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-terminal text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-white text-lg">Execution Output</h3>
+                            <p class="text-white/70 text-sm">[[ activeLogOutput.template_name || activeLogOutput.templateName || 'Template' ]] • [[ activeLogOutput.hostname ]]</p>
+                        </div>
+                    </div>
+                    <button @click="viewingLogOutput = false" class="w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition flex items-center justify-center text-white">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 bg-slate-50 overflow-auto p-5">
+                <div class="bg-slate-950 p-4 rounded-lg text-sm font-mono space-y-4">
+                    <div v-if="activeLogOutput.stdout">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span class="text-green-400 text-xs font-semibold">STDOUT</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="copyToClipboard(activeLogOutput.stdout)" class="text-xs px-2 py-1 bg-slate-700 text-white rounded">Copy STDOUT</button>
+                            </div>
+                        </div>
+                        <pre class="bg-slate-900 p-3 rounded text-green-400 whitespace-pre-wrap leading-relaxed" v-html="ansiToHtml(activeLogOutput.stdout)"></pre>
+                    </div>
+                    <div v-if="activeLogOutput.stderr">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                                <span class="text-red-400 text-xs font-semibold">STDERR</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button @click="copyToClipboard(activeLogOutput.stderr)" class="text-xs px-2 py-1 bg-red-700 text-white rounded">Copy STDERR</button>
+                            </div>
+                        </div>
+                        <pre class="bg-slate-900 p-3 rounded text-red-400 whitespace-pre-wrap leading-relaxed" v-html="ansiToHtml(activeLogOutput.stderr)"></pre>
+                    </div>
+                    <div v-if="!activeLogOutput.stdout && !activeLogOutput.stderr" class="text-gray-500 italic text-center py-6">No output captured</div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-900 border-t border-slate-800 flex justify-between items-center">
+                <div class="text-xs text-slate-500 flex items-center gap-2">
+                    <i class="fas fa-server"></i>
+                    <span>Host: [[ activeLogOutput.hostname ]]</span>
+                </div>
+                <button @click="viewingLogOutput = false" class="px-5 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition font-medium text-sm">Close</button>
             </div>
         </div>
     </div>
