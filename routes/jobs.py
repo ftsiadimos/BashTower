@@ -79,7 +79,7 @@ def get_jobs():
         'id': j.id,
         'template_name': j.template_name,
         'status': j.status,
-        'created_at': str(j.created_at)
+        'created_at': j.created_at.isoformat() + 'Z'
     } for j in jobs])
 
 
@@ -97,6 +97,6 @@ def get_job_details(job_id):
         'id': job.id,
         'template_name': job.template_name,
         'status': job.status,
-        'created_at': str(job.created_at),
+        'created_at': job.created_at.isoformat() + 'Z',
         'logs': logs
     })

@@ -61,7 +61,7 @@ def get_cron_history():
             'script_type': script_type,
             'hostname': log.hostname,
             'host_name': host_display_name,  # Display name if available
-            'created_at': log.created_at.isoformat() if log.created_at else None,
+            'created_at': log.created_at.isoformat() + 'Z' if log.created_at else None,
             'status': log.status,
             'stdout': log.stdout,
             'stderr': log.stderr,
