@@ -10,6 +10,7 @@
 import io
 import logging
 import threading
+import socket
 import paramiko
 from extensions import db
 from models import Job, JobLog, Host, Template, SSHKey
@@ -122,6 +123,22 @@ def execute_ssh_command(app, host_obj, key_obj, script_content, job_id, log_mode
             log_entry.stderr = f"Authentication Error: {e}"
             log_entry.status = 'connection_failed'
             
+        except paramiko.ssh_exception.NoValidConnectionsError as e:
+            # Paramiko raises this when it cannot establish a TCP connection to any address/port
+            # e.errors is a dict mapping (ip, port) -> exception
+            try:
+                details = []
+                if hasattr(e, 'errors') and e.errors:
+                    for addr, err in e.errors.items():
+                        details.append(f"{addr[0]}:{addr[1]} -> {err}")
+                details_str = '; '.join(details) if details else str(e)
+            except Exception:
+                details_str = str(e)
+
+            logger.error(f"Connection failed for {host_obj.hostname}: {details_str}")
+            log_entry.stderr = f"Network error: Unable to connect to {host_obj.hostname} (resolved addresses: {details_str}). Check network, firewall, and that SSH is listening on the target host/port."
+            log_entry.status = 'connection_failed'
+
         except paramiko.SSHException as e:
             logger.error(f"SSH error for {host_obj.hostname}: {e}")
             log_entry.stderr = f"SSH Error: {e}"
@@ -132,6 +149,12 @@ def execute_ssh_command(app, host_obj, key_obj, script_content, job_id, log_mode
             log_entry.stderr = f"Connection Timeout: {e}"
             log_entry.status = 'connection_failed'
             
+        except socket.gaierror as e:
+            # DNS resolution / name lookup failure
+            logger.error(f"DNS resolution failed for {host_obj.hostname}: {e}")
+            log_entry.stderr = f"DNS resolution failed: {e}. Host may be invalid or unreachable. Consider removing this host."
+            log_entry.status = 'connection_failed'
+
         except Exception as e:
             logger.exception(f"Unexpected error for {host_obj.hostname}: {e}")
             log_entry.stderr = f"Error: {e}"

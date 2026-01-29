@@ -18,6 +18,10 @@ from services.ssh_service import execute_ssh_command
 # Configure logger for this module
 logger = logging.getLogger(__name__)
 
+# Runtime locks to prevent overlapping executions in the same process
+_cron_locks = {}
+_lock_registry_lock = threading.Lock()
+
 
 def cleanup_old_cron_history():
     """Clean up old cron history entries based on settings limit."""
@@ -55,6 +59,18 @@ def execute_cron_job(app, cron_job_id):
             logger.warning(f"Cron job {cron_job_id} not found or disabled, skipping execution")
             return
 
+        # Prevent overlapping executions in this process using a per-cron lock
+        with _lock_registry_lock:
+            if cron_job_id not in _cron_locks:
+                _cron_locks[cron_job_id] = threading.Lock()
+            cron_lock = _cron_locks[cron_job_id]
+
+        acquired = cron_lock.acquire(blocking=False)
+        if not acquired:
+            logger.warning(f"Cron job '{cron.name}' (ID: {cron_job_id}) skipped because a previous run is still in progress")
+            return
+
+
         # Resolve hosts
         host_ids = [int(x) for x in cron.host_ids.split(',')] if cron.host_ids else []
         hosts = Host.query.filter(Host.id.in_(host_ids)).all()
@@ -84,14 +100,21 @@ def execute_cron_job(app, cron_job_id):
         for t in threads:
             t.join()
 
-        # Update last_run timestamp
-        cron.last_run = datetime.utcnow()
-        db.session.commit()
-        
-        # Auto-cleanup old history entries based on settings
-        cleanup_old_cron_history()
-        
-        logger.info(f"Cron job '{cron.name}' (ID: {cron_job_id}) execution completed")
+        try:
+            # Update last_run timestamp
+            cron.last_run = datetime.utcnow()
+            db.session.commit()
+
+            # Auto-cleanup old history entries based on settings
+            cleanup_old_cron_history()
+
+            logger.info(f"Cron job '{cron.name}' (ID: {cron_job_id}) execution completed")
+        finally:
+            # Release the lock so future runs can proceed
+            try:
+                cron_lock.release()
+            except Exception:
+                pass
 
 
 def load_cron_jobs_into_scheduler(app):
@@ -103,6 +126,10 @@ def load_cron_jobs_into_scheduler(app):
         for cron in enabled_jobs:
             try:
                 trigger = CronTrigger.from_crontab(cron.schedule)
+                # If a job with the same ID already exists and is active, replacing it avoids duplicates
+                existing = scheduler.get_job(str(cron.id))
+                if existing:
+                    logger.debug(f"Cron job with ID {cron.id} already scheduled; replacing existing job")
                 scheduler.add_job(
                     func=execute_cron_job,
                     trigger=trigger,
@@ -119,6 +146,9 @@ def schedule_cron_job(app, cron_job):
     """Schedule a single cron job."""
     try:
         trigger = CronTrigger.from_crontab(cron_job.schedule)
+        existing = scheduler.get_job(str(cron_job.id))
+        if existing:
+            logger.debug(f"Cron job with ID {cron_job.id} already scheduled; replacing existing job")
         scheduler.add_job(
             func=execute_cron_job,
             trigger=trigger,

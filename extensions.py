@@ -18,4 +18,5 @@ db = SQLAlchemy()
 migrate = Migrate()
 
 # Scheduler instance
-scheduler = BackgroundScheduler()
+# Configure with max_instances=1 to avoid duplicate overlapping job executions
+scheduler = BackgroundScheduler(job_defaults={'max_instances': 1})

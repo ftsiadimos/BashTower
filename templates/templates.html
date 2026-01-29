@@ -594,8 +594,7 @@
                                     <span class="mx-2">•</span>
                                     <span>[[ templateForm.script ? templateForm.script.length : 0 ]] chars</span>
                                 </div>
-                                <button @click="toggleTemplateEditorExpand" class="text-xs px-3 py-1 rounded bg-gray-700/30 hover:bg-gray-700/40 text-white">[[ templateEditorExpanded ? 'Collapse' : 'Expand' ]]</button>
-                            </div>
+                                <button @click="toggleTemplateEditorExpand" class="text-xs px-3 py-1 rounded bg-gray-700/30 hover:bg-gray-700/40 text-white">[[ templateEditorExpanded ? 'Collapse' : 'Expand' ]]</button>                                <button @click="openFullEditor" class="text-xs px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white">Pop Out</button>                            </div>
                         </div>
                         <textarea v-model="templateForm.script"
                             spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off"
@@ -603,6 +602,24 @@
                             :class="[ templateForm.script_type === 'python' ? 'bg-slate-900 text-yellow-300' : 'bg-gray-900 text-green-400', templateEditorExpanded ? 'min-h-[36rem] max-h-[80vh]' : 'h-72 min-h-[16rem] max-h-[40rem]' ]"
                             class="w-full p-4 font-mono text-sm focus:outline-none resize-y"
                             style="font-family: 'Courier New', Consolas, 'Liberation Mono', monospace;"></textarea>
+                    </div>
+
+                    <!-- Fullscreen Pop-out Editor (Ace) -->
+                    <div v-if="fullEditorOpen" class="fixed inset-0 bg-slate-900/95 z-50 flex flex-col">
+                        <div class="p-4 flex items-center justify-between bg-slate-800 text-white">
+                            <div class="flex items-center gap-4">
+                                <strong>Full Screen Editor</strong>
+                                <span class="text-xs text-gray-300">[[ templateForm.script_type === 'python' ? 'Python' : 'Bash' ]] — Press <kbd class="bg-gray-700 px-2 py-0.5 rounded">Ctrl-S</kbd> to apply</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <!-- Editor toolbar: search -->
+                                <button @click="openEditorSearch" class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm">Search</button>
+                                <button @click="applyFullEditor" class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white">Apply</button>
+                                <button @click="closeFullEditor" class="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded text-white">Close</button>
+                                <span class="ml-4 text-xs text-gray-300 font-mono">[[ fullEditorCursor ]]</span>
+                            </div>
+                        </div>
+                        <div id="full-template-editor" class="flex-1" style="height:calc(100vh - 64px);"></div>
                     </div>
                 </div>
 

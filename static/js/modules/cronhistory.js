@@ -140,10 +140,9 @@ const CronHistoryMethods = {
         try {
             const response = await fetch('/api/cronhistory/clean', { method: 'DELETE' });
             const data = await response.json();
-            console.log(data.message);
-            // Refresh history after cleaning
             this.fetchCronHistory(1, this.cronHistoryPerPage);
             this.cronHistoryPage = 1;
+            if (data && data.message) this.$root.showToast(data.message, 'success');
         } catch (err) {
             console.error('Error cleaning cron logs:', err);
         }
