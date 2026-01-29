@@ -46,6 +46,55 @@ const JobsMethods = {
         }
 
         this.activeJob = jobDetails;
+
+        // Detect unreachable hosts (DNS errors) and prompt user to remove them
+        try {
+            this.detectUnreachableHosts(jobDetails.logs || []);
+        } catch (e) { console.warn('Failed to check unreachable hosts:', e); }
+    },
+
+    // Detect logs that indicate DNS/name resolution failures and offer to remove the host
+    async detectUnreachableHosts(logs) {
+        if (!logs || !this.hosts) return;
+        // Avoid prompting repeatedly for same host during the same app session
+        if (!this._unreachablePrompted) this._unreachablePrompted = new Set();
+
+        for (const log of logs) {
+            if (!log || !log.stderr || log.status !== 'connection_failed') continue;
+            const stderr = (log.stderr || '').toLowerCase();
+            // Look for common DNS/gaierror phrases
+            const isDnsError = stderr.includes('name or service not known') || stderr.includes('gaierror') || stderr.includes('dns resolution failed') || stderr.includes('temporary failure in name resolution');
+            if (!isDnsError) continue;
+
+            const hostname = log.hostname;
+            if (this._unreachablePrompted.has(hostname)) continue;
+            this._unreachablePrompted.add(hostname);
+
+            // Ask the user whether to remove the host
+            const confirmMsg = `Host ${hostname} appears unreachable (DNS error). Would you like to remove this host from your inventory?`;
+            if (!confirm(confirmMsg)) continue;
+
+            // Find host entry by hostname
+            const hostObj = this.hosts.find(h => h.hostname === hostname || h.name === hostname);
+            if (!hostObj) {
+                alert(`Could not find host ${hostname} in inventory to remove.`);
+                continue;
+            }
+
+            try {
+                const resp = await fetch(`${API.HOSTS}/${hostObj.id}`, { method: 'DELETE' });
+                if (resp.ok) {
+                    // Refresh hosts list and show confirmation
+                    await this.fetchHosts();
+                    alert(`Host ${hostname} removed.`);
+                } else {
+                    const err = await resp.json();
+                    alert(`Failed to remove host: ${err.message || err.error || 'Unknown error'}`);
+                }
+            } catch (err) {
+                alert(`Network error removing host: ${err.message}`);
+            }
+        }
     },
 
     // Toggle select all hosts for job run

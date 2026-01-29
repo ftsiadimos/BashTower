@@ -133,15 +133,18 @@ def create_app():
 # Create the application instance
 app = create_app()
 
-# Start the scheduler
-scheduler.start()
-app.logger.info("Background scheduler started")
+# Start the scheduler only in the main process (avoids duplicate schedulers when using Flask's reloader)
+if (not app.debug) or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+    scheduler.start()
+    app.logger.info("Background scheduler started")
 
-# Load cron jobs into scheduler
-load_cron_jobs_into_scheduler(app)
+    # Load cron jobs into scheduler
+    load_cron_jobs_into_scheduler(app)
 
-# Shut down the scheduler when exiting the app
-atexit.register(lambda: scheduler.shutdown())
+    # Shut down the scheduler when exiting the app
+    atexit.register(lambda: scheduler.shutdown())
+else:
+    app.logger.info("Skipping scheduler start in reloader parent process")
 
 
 if __name__ == '__main__':

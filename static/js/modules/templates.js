@@ -26,6 +26,10 @@ const TemplatesData = () => ({
     // Editor/UI expand states
     templateEditorExpanded: false,
     scriptAIExpanded: false,
+    // Fullscreen pop-out editor (Ace)
+    fullEditorOpen: false,
+    // Full editor cursor position display
+    fullEditorCursor: 'Ln 1, Col 1',
 
     // Git Sync state
     gitSyncModalOpen: false,
@@ -193,7 +197,6 @@ const TemplatesMethods = {
 
     // Copy script to clipboard from preview
     async copyScriptFromPreview() {
-        console.log('copyScriptFromPreview called', this.previewTemplate);
         if (!this.previewTemplate || !this.previewTemplate.script) {
             alert('No script to copy');
             return;
@@ -387,6 +390,139 @@ const TemplatesMethods = {
         });
     },
 
+    // Open full-screen Ace editor (pop-out)
+    openFullEditor() {
+        this.fullEditorOpen = true;
+        this.$nextTick(() => {
+            const el = document.getElementById('full-template-editor');
+            if (!el) return;
+
+            // Destroy previous instance if any
+            try { if (this._fullEditorInstance) { this._fullEditorInstance.destroy(); delete this._fullEditorInstance; } } catch(e){}
+
+            if (window.ace && typeof window.ace.edit === 'function') {
+                this._fullEditorInstance = window.ace.edit(el);
+                const theme = 'ace/theme/monokai';
+                this._fullEditorInstance.setTheme(theme);
+                const mode = this.templateForm.script_type === 'python' ? 'ace/mode/python' : 'ace/mode/sh';
+                this._fullEditorInstance.session.setMode(mode);
+                this._fullEditorInstance.session.setValue(this.templateForm.script || '');
+
+
+
+                // Editor options
+                this._fullEditorInstance.setOptions({fontSize: '13pt', wrap: false, showLineNumbers: true, showGutter: true});
+
+                // Enable basic search on Ctrl-F (open the SearchBox extension)
+                try {
+                    const SearchBox = window.ace.require && window.ace.require('ace/ext/searchbox');
+                    if (SearchBox) {
+                        this._fullEditorInstance.commands.addCommand({
+                            name: 'find',
+                            bindKey: {win: 'Ctrl-F', mac: 'Command-F'},
+                            exec: function(editor) { SearchBox.Search(editor, true); }
+                        });
+                    }
+                } catch (e) { /* ignore */ }
+
+                // Save keybinding
+                this._fullEditorInstance.commands.addCommand({
+                    name: 'save',
+                    bindKey: {win: 'Ctrl-S', mac: 'Command-S'},
+                    exec: () => this.applyFullEditor()
+                });
+
+                // Focus and store state
+                this._fullEditorInstance.focus();
+
+                // Keep mode up to date if script type changes
+                try {
+                    if (this._aceModeUnwatch) this._aceModeUnwatch();
+                    this._aceModeUnwatch = this.$watch('templateForm.script_type', (newType) => {
+                        try {
+                            const mode = newType === 'python' ? 'ace/mode/python' : 'ace/mode/sh';
+                            this._fullEditorInstance.session.setMode(mode);
+                        } catch(e){}
+                    });
+                } catch(e){}
+
+                // Live sync and change handler
+                try {
+                    if (this._fullEditorChangeHandler) {
+                        try { this._fullEditorInstance.getSession().off('change', this._fullEditorChangeHandler); } catch(e){}
+                        this._fullEditorChangeHandler = null;
+                    }
+                    this._fullEditorChangeHandler = () => {
+                        try { this.templateForm.script = this._fullEditorInstance.getValue(); } catch(e){}
+                    };
+                    this._fullEditorInstance.getSession().on('change', this._fullEditorChangeHandler);
+
+                    // Cursor position handler for status display
+                    if (this._aceCursorHandler) {
+                        try { this._fullEditorInstance.selection.off('changeCursor', this._aceCursorHandler); } catch(e){}
+                        this._aceCursorHandler = null;
+                    }
+                    this._aceCursorHandler = () => {
+                        try {
+                            const p = this._fullEditorInstance.getCursorPosition();
+                            this.fullEditorCursor = `Ln ${p.row+1}, Col ${p.column+1}`;
+                        } catch (e) { }
+                    };
+                    this._fullEditorInstance.selection.on('changeCursor', this._aceCursorHandler);
+                } catch (e) { console.warn('Could not attach change handler to Ace:', e); }
+            } else {
+                alert('Full editor library not loaded.');
+            }
+        });
+    },
+
+    // Apply changes from full editor back to the form and close
+    applyFullEditor() {
+        if (this._fullEditorInstance) {
+            try {
+                this.templateForm.script = this._fullEditorInstance.getValue();
+            } catch (e) { console.warn('applyFullEditor read error', e); }
+        }
+
+        // Clean-up editor resources
+        try {
+            if (this._fullEditorChangeHandler && this._fullEditorInstance) {
+                try { this._fullEditorInstance.getSession().off('change', this._fullEditorChangeHandler); } catch(e){}
+                this._fullEditorChangeHandler = null;
+            }
+            if (this._aceCursorHandler && this._fullEditorInstance) {
+                try { this._fullEditorInstance.selection.off('changeCursor', this._aceCursorHandler); } catch(e){}
+                this._aceCursorHandler = null;
+            }
+            if (this._aceModeUnwatch) { try { this._aceModeUnwatch(); } catch(e){}; this._aceModeUnwatch = null; }
+        } catch(e) { console.warn('cleanup error', e); }
+
+        this.fullEditorOpen = false;
+        this.$nextTick(() => {
+            try { if (this._fullEditorInstance) { this._fullEditorInstance.destroy(); delete this._fullEditorInstance; } } catch(e){}
+        });
+    },
+
+    // Close full editor without applying changes
+    closeFullEditor() {
+        try {
+            if (this._fullEditorChangeHandler && this._fullEditorInstance) {
+                try { this._fullEditorInstance.getSession().off('change', this._fullEditorChangeHandler); } catch(e){}
+                this._fullEditorChangeHandler = null;
+            }
+            if (this._aceCursorHandler && this._fullEditorInstance) {
+                try { this._fullEditorInstance.selection.off('changeCursor', this._aceCursorHandler); } catch(e){}
+                this._aceCursorHandler = null;
+            }
+            if (this._aceModeUnwatch) { try { this._aceModeUnwatch(); } catch(e){}; this._aceModeUnwatch = null; }
+        } catch(e) { console.warn('cleanup error', e); }
+
+        this.fullEditorOpen = false;
+        this.$nextTick(() => {
+            try { if (this._fullEditorInstance) { this._fullEditorInstance.destroy(); delete this._fullEditorInstance; } } catch(e){}
+        });
+    },
+
     // Toggle AI response expanded state
     toggleScriptAIExpand() {
         this.scriptAIExpanded = !this.scriptAIExpanded;
@@ -395,6 +531,31 @@ const TemplatesMethods = {
             if (pre && window.hljs) try { window.hljs.highlightElement(pre.querySelector('code') || pre); } catch(e){}
         });
     },
+
+    // Open Ace search box (or trigger editor find)
+    openEditorSearch() {
+        if (!this._fullEditorInstance) return;
+        try {
+            const SearchBox = window.ace.require && window.ace.require('ace/ext/searchbox');
+            if (SearchBox) {
+                SearchBox.Search(this._fullEditorInstance, true);
+            } else {
+                // fallback: open builtin find
+                this._fullEditorInstance.execCommand('find');
+            }
+        } catch (e) {
+            console.warn('Search extension not available', e);
+            try { this._fullEditorInstance.execCommand('find'); } catch(e){}
+        }
+    },
+
+
+
+
+
+
+
+
 
     // ========================================================================
     // Git Sync Methods
