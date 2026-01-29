@@ -85,9 +85,9 @@ def handle_cronjobs():
                 'key_id': c.key_id,
                 'host_ids': [int(x) for x in c.host_ids.split(',')] if c.host_ids else [],
                 'enabled': c.enabled,
-                'last_run': c.last_run.isoformat() if c.last_run else None,
-                'next_run': c.next_run.isoformat() if c.next_run else None,
-                'created_at': c.created_at.isoformat()
+                'last_run': c.last_run.isoformat() + 'Z' if c.last_run else None,
+                'next_run': c.next_run.isoformat() + 'Z' if c.next_run else None,
+                'created_at': c.created_at.isoformat() + 'Z'
             } for c in cron_jobs
         ])
 
@@ -158,6 +158,6 @@ def get_cron_job_logs(cron_job_id):
             'stdout': log.stdout,
             'stderr': log.stderr,
             'status': log.status,
-            'created_at': log.created_at.isoformat()
+            'created_at': log.created_at.isoformat() + 'Z'
         } for log in logs
     ])

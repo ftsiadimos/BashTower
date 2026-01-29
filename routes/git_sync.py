@@ -96,7 +96,7 @@ def get_config():
         'repo_url': config.repo_url or '',
         'branch': config.branch or 'main',
         'access_token': masked_token,
-        'last_sync': config.last_sync.isoformat() if config.last_sync else None,
+        'last_sync': config.last_sync.isoformat() + 'Z' if config.last_sync else None,
         'sync_status': config.sync_status,
         'configured': bool(config.repo_url)
     })
@@ -235,7 +235,7 @@ def export_to_git():
                 'filename': filename,
                 'script_type': template.script_type or 'bash',
                 'arguments': template.arguments,
-                'created_at': template.created_at.isoformat() if template.created_at else None
+                'created_at': template.created_at.isoformat() + 'Z' if template.created_at else None
             })
         
         # Write manifest file
@@ -243,7 +243,7 @@ def export_to_git():
         with open(manifest_path, 'w') as f:
             json.dump({
                 'version': '1.0',
-                'exported_at': datetime.utcnow().isoformat(),
+                'exported_at': datetime.utcnow().isoformat() + 'Z',
                 'templates': manifest
             }, f, indent=2)
         
@@ -560,7 +560,7 @@ def backup_to_git():
         # Create backup structure
         backup_data = {
             'version': '1.0',
-            'backup_date': datetime.utcnow().isoformat(),
+            'backup_date': datetime.utcnow().isoformat() + 'Z',
             'templates': [],
             'hosts': [],
             'host_groups': [],
@@ -591,7 +591,7 @@ def backup_to_git():
                 'filename': filename,
                 'script_type': template.script_type or 'bash',
                 'arguments': template.arguments,
-                'created_at': template.created_at.isoformat() if template.created_at else None
+                'created_at': template.created_at.isoformat() + 'Z' if template.created_at else None
             })
         
         # Backup Hosts
@@ -639,9 +639,9 @@ def backup_to_git():
                 'key_id': cron.key_id,
                 'host_ids': cron.host_ids,
                 'enabled': cron.enabled,
-                'last_run': cron.last_run.isoformat() if cron.last_run else None,
-                'next_run': cron.next_run.isoformat() if cron.next_run else None,
-                'created_at': cron.created_at.isoformat() if cron.created_at else None
+                'last_run': cron.last_run.isoformat() + 'Z' if cron.last_run else None,
+                'next_run': cron.next_run.isoformat() + 'Z' if cron.next_run else None,
+                'created_at': cron.created_at.isoformat() + 'Z' if cron.created_at else None
             })
         
         # Backup Users
