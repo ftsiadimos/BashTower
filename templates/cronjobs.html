@@ -59,7 +59,7 @@
 
     <!-- Cron Editor Modal -->
     <div v-if="editingCronJob" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="cancelCronJobEdit">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden" @click="if(cronTemplateDropdownOpen) { cronTemplateDropdownOpen = false; cronTemplateSearchQuery = ''; }">
             <!-- Modal Header -->
             <div class="p-5 bg-gradient-to-r from-indigo-600 to-purple-700 flex justify-between items-center">
                 <div class="flex items-center gap-4">
@@ -105,11 +105,47 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             <i class="fas fa-file-code mr-1 text-gray-400"></i> Template
                         </label>
-                        <select v-model="cronJobForm.template_id" 
-                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
-                            <option value="" disabled>Select a template...</option>
-                            <option v-for="t in templates" :value="t.id">[[ t.name ]]</option>
-                        </select>
+                        <!-- Custom Template Dropdown with Search -->
+                        <div class="relative" @click.stop>
+                            <button type="button" @click="cronTemplateDropdownOpen = !cronTemplateDropdownOpen" 
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-white text-left flex items-center justify-between">
+                                <span v-if="!cronJobForm.template_id" class="text-gray-500">Select a template...</span>
+                                <span v-else class="flex items-center gap-2">
+                                    <i :class="getTemplateById(cronJobForm.template_id)?.script_type === 'python' ? 'fab fa-python text-yellow-500' : 'fas fa-terminal text-gray-600'"></i>
+                                    [[ getTemplateById(cronJobForm.template_id)?.name ]]
+                                </span>
+                                <i class="fas fa-chevron-down text-gray-400 text-sm transition-transform" :class="cronTemplateDropdownOpen ? 'rotate-180' : ''"></i>
+                            </button>
+                            <!-- Dropdown Menu -->
+                            <div v-if="cronTemplateDropdownOpen" class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-hidden">
+                                <div class="px-3 py-2 border-b border-gray-200 bg-gray-50">
+                                    <input v-model="cronTemplateSearchQuery" type="text" placeholder="Search templates..." 
+                                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                                        @click.stop />
+                                </div>
+                                <div class="overflow-y-auto max-h-60">
+                                    <div v-if="filteredCronTemplates.length === 0" class="px-4 py-3 text-gray-500 text-sm">No templates found</div>
+                                    <button v-for="t in filteredCronTemplates" :key="t.id" type="button"
+                                        @click="cronJobForm.template_id = t.id; cronTemplateDropdownOpen = false"
+                                        :class="[
+                                            'w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-gray-50 transition',
+                                            cronJobForm.template_id === t.id ? 'bg-indigo-50' : ''
+                                        ]">
+                                        <span :class="[
+                                            'w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0',
+                                            t.script_type === 'python' ? 'bg-yellow-100' : 'bg-gray-100'
+                                        ]">
+                                            <i :class="t.script_type === 'python' ? 'fab fa-python text-yellow-600' : 'fas fa-terminal text-gray-600'"></i>
+                                        </span>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-medium text-gray-800 truncate">[[ t.name ]]</p>
+                                            <p class="text-xs text-gray-500">[[ t.script_type === 'python' ? 'Python' : 'Bash' ]] script</p>
+                                        </div>
+                                        <i v-if="cronJobForm.template_id === t.id" class="fas fa-check text-indigo-600"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">

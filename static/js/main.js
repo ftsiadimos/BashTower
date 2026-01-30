@@ -103,6 +103,8 @@ const App = {
             cronJobSearchQuery: '',
             cronHostSearchQuery: '',
             cronGroupSearchQuery: '',
+            cronTemplateSearchQuery: '',
+            cronTemplateDropdownOpen: false,
             cronJobForm: { 
                 id: null, 
                 name: '', 
@@ -123,6 +125,13 @@ const App = {
             cronHistoryPollingInterval: null,
             activeCronLog: null,
             cronHistorySearchQuery: '',
+            viewingAllOutputs: false,
+            cronHistoryLoading: false,
+            allOutputsData: [],
+            allOutputsFilterCronJob: '',
+            allOutputsFilterTimeRange: 'all',
+            allOutputsFilterStatus: '',
+            allOutputsLimit: '100',
 
             // --- Settings ---
             settingsForm: {
@@ -235,6 +244,118 @@ const App = {
             return this.groups.filter(g => g.name.toLowerCase().includes(query));
         },
 
+        // Filter templates for cron job form
+        filteredCronTemplates() {
+            if (!this.cronTemplateSearchQuery.trim()) {
+                return this.templates;
+            }
+            const query = this.cronTemplateSearchQuery.toLowerCase();
+            return this.templates.filter(t => t.name.toLowerCase().includes(query));
+        },
+
+        // Get unique cron job names from current history
+        uniqueCronJobNames() {
+            const names = new Set();
+            this.allOutputsData.forEach(log => {
+                if (log.cron_job_name) {
+                    names.add(log.cron_job_name);
+                }
+            });
+            return Array.from(names).sort();
+        },
+
+        // Calculate visible page numbers for pagination
+        cronHistoryVisiblePages() {
+            const total = Math.ceil(this.cronHistoryTotal / this.cronHistoryPerPage);
+            const current = this.cronHistoryPage;
+            const pages = [];
+            
+            if (total <= 7) {
+                // Show all pages if 7 or fewer
+                for (let i = 1; i <= total; i++) {
+                    pages.push(i);
+                }
+            } else {
+                // Always show first page
+                pages.push(1);
+                
+                if (current <= 3) {
+                    // Near start: 1 2 3 4 5 ... last
+                    for (let i = 2; i <= 5; i++) {
+                        pages.push(i);
+                    }
+                    pages.push('...');
+                    pages.push(total);
+                } else if (current >= total - 2) {
+                    // Near end: 1 ... n-4 n-3 n-2 n-1 n
+                    pages.push('...');
+                    for (let i = total - 4; i <= total; i++) {
+                        pages.push(i);
+                    }
+                } else {
+                    // Middle: 1 ... current-1 current current+1 ... last
+                    pages.push('...');
+                    pages.push(current - 1);
+                    pages.push(current);
+                    pages.push(current + 1);
+                    pages.push('...');
+                    pages.push(total);
+                }
+            }
+            
+            return pages;
+        },
+
+        // Filter all outputs based on selected filters
+        filteredAllOutputs() {
+            let filtered = this.allOutputsData;
+
+            // Filter by cron job
+            if (this.allOutputsFilterCronJob) {
+                filtered = filtered.filter(log => log.cron_job_name === this.allOutputsFilterCronJob);
+            }
+
+            // Filter by status
+            if (this.allOutputsFilterStatus) {
+                filtered = filtered.filter(log => log.status === this.allOutputsFilterStatus);
+            }
+
+            // Filter by time range
+            if (this.allOutputsFilterTimeRange && this.allOutputsFilterTimeRange !== 'all') {
+                const now = new Date();
+                const timeRanges = {
+                    '10m': 10 * 60 * 1000,
+                    '30m': 30 * 60 * 1000,
+                    '1h': 60 * 60 * 1000,
+                    '3h': 3 * 60 * 60 * 1000,
+                    '6h': 6 * 60 * 60 * 1000,
+                    '12h': 12 * 60 * 60 * 1000,
+                    '24h': 24 * 60 * 60 * 1000
+                };
+                const timeRange = timeRanges[this.allOutputsFilterTimeRange];
+                if (timeRange) {
+                    const timeLimit = new Date(now.getTime() - timeRange);
+                    filtered = filtered.filter(log => {
+                        // Parse timestamp as UTC by appending 'Z' if not present
+                        let timestamp = log.created_at;
+                        if (timestamp && !timestamp.endsWith('Z') && !timestamp.includes('+')) {
+                            timestamp = timestamp + 'Z';
+                        }
+                        const logTime = new Date(timestamp);
+                        return logTime >= timeLimit;
+                    });
+                }
+            }
+
+            // Apply limit
+            const limit = parseInt(this.allOutputsLimit);
+            if (!isNaN(limit) && limit > 0) {
+                filtered = filtered.slice(0, limit);
+            }
+
+            return filtered;
+        },
+
         // Key computed properties (moved to module)
         ...KeysComputed,
 
@@ -303,6 +424,10 @@ const App = {
             if (event.key === 'Escape' && this.templateDropdownOpen) {
                 this.closeTemplateDropdown();
             }
+            if (event.key === 'Escape' && this.cronTemplateDropdownOpen) {
+                this.cronTemplateDropdownOpen = false;
+                this.cronTemplateSearchQuery = '';
+            }
         };
         document.addEventListener('keydown', this.handleGlobalKeydown);
         
@@ -311,6 +436,10 @@ const App = {
             this.loadViewData(newView);
             // Close the template dropdown when switching views
             if (this.templateDropdownOpen) this.closeTemplateDropdown();
+            if (this.cronTemplateDropdownOpen) {
+                this.cronTemplateDropdownOpen = false;
+                this.cronTemplateSearchQuery = '';
+            }
         });
 
         // Watch job history to clear lastLaunchedJobId when it completes
@@ -354,6 +483,10 @@ const App = {
                 // Close template dropdown when switching browser tabs (page hidden)
                 if (document.hidden && this.templateDropdownOpen) {
                     this.closeTemplateDropdown();
+                }
+                if (document.hidden && this.cronTemplateDropdownOpen) {
+                    this.cronTemplateDropdownOpen = false;
+                    this.cronTemplateSearchQuery = '';
                 }
             };
             document.addEventListener('visibilitychange', this.handleVisibilityChange);

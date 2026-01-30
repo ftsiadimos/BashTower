@@ -141,6 +141,7 @@ def sync_satellite_hosts():
                 hostname=host_ip_or_fqdn,
                 username=default_ssh_username,
                 port=ssh_port,
+                shell='/bin/bash',
             )
             db.session.add(new_host)
             db.session.flush()  # Get the ID
