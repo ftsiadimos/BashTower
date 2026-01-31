@@ -5,13 +5,13 @@
 <h1 align="center">BashTower</h1>
 
 <p align="center">
-  <strong>A lightweight, web-based remote script execution platform for home labs</strong><br>
-  Designed for hobbyists managing their own servers—simple, fast, and fun 
+  <strong>A web-based platform for remote script execution suitable for personal and small server environments</strong><br>
+  Practical, secure, and easy to manage.
 </p>
 
 <p align="center">
-  <em>Have fun writing your own Bash or Python scripts to automate tasks, save them as templates,<br>
-  and easily sync to a Git repository to share with others!</em>
+  <em>Create Bash or Python scripts to automate routine tasks, store them as templates,<br>
+  and sync changes to a Git repository for easy tracking.</em>
 </p>
 
 <p align="center">
