@@ -681,7 +681,8 @@ def backup_to_git():
                 'ai_model': app_settings.ai_model,
                 'ai_endpoint': app_settings.ai_endpoint,
                 'cron_history_limit': app_settings.cron_history_limit,
-                'auth_disabled': app_settings.auth_disabled
+                'auth_disabled': app_settings.auth_disabled,
+                'theme': app_settings.theme
             }
             if include_sensitive:
                 settings_data['ai_api_key'] = app_settings.ai_api_key
@@ -1086,6 +1087,7 @@ def restore_from_git():
                 settings.ai_endpoint = settings_data.get('ai_endpoint')
                 settings.cron_history_limit = settings_data.get('cron_history_limit', 0)
                 settings.auth_disabled = settings_data.get('auth_disabled', False)
+                settings.theme = settings_data.get('theme', 'default')
                 if settings_data.get('ai_api_key'):
                     settings.ai_api_key = settings_data['ai_api_key']
             except Exception as e:

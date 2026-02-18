@@ -17,7 +17,15 @@ const SettingsMethods = {
             this.settingsForm.ai_endpoint = data.ai_endpoint || '';
             this.settingsForm.cron_history_limit = data.cron_history_limit || 0;
             this.settingsForm.auth_disabled = data.auth_disabled || false;
+            // Prefer the locally-applied theme (localStorage) so the selector reflects current UI
+            const localTheme = (() => { try { return localStorage.getItem('bashtower_theme'); } catch (e) { return null; } })();
+            this.settingsForm.theme = localTheme || data.theme || 'default';
             this.aiConfigured = data.ai_configured || false;
+
+            // Apply theme immediately (prefer client value)
+            if (typeof this.setTheme === 'function') {
+                this.setTheme(this.settingsForm.theme);
+            }
             
             // Fetch cron history count
             await this.refreshCronHistoryCount();

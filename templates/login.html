@@ -9,8 +9,22 @@
     <link rel="icon" href="{{ url_for('static', filename='img/BashTower.png') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Include application stylesheet so theme can be applied on the login page -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen flex items-center justify-center">
+
+    <!-- Apply persisted theme immediately so login shows themed background/logo instantly -->
+    <script>
+        try {
+            const t = localStorage.getItem('bashtower_theme');
+            if (t === 'green-terminal') {
+                document.body.classList.add('theme-green-terminal', 'theme-green-login');
+            }
+        } catch (e) {
+            /* ignore */
+        }
+    </script>
     
     <div id="loginApp" class="w-full max-w-md px-6">
         <!-- Logo Section -->

@@ -91,3 +91,231 @@ textarea {
 .prose * {
     max-width: 100% !important;
 }
+
+/* --------------------------------------------------------------------------
+   Green Terminal Theme
+   - Applied when <body class="theme-green-terminal"> is present
+   - Overrides key backgrounds / text to give a terminal-like green-on-black
+   -------------------------------------------------------------------------- */
+body.theme-green-terminal {
+    background-color: #07120b !important; /* near-black green-tinted */
+    color: #bfffcf !important;
+}
+
+body.theme-green-terminal header.bg-white,
+body.theme-green-terminal .bg-white {
+    background-color: rgba(2,6,2,0.55) !important;
+    color: #dfffe0 !important;
+    border-color: rgba(34,197,94,0.06) !important;
+    box-shadow: none !important;
+}
+
+body.theme-green-terminal .bg-gray-50 { background-color: rgba(2,6,2,0.45) !important; }
+body.theme-green-terminal .text-gray-800, body.theme-green-terminal .text-gray-700 { color: #d6ffda !important; }
+body.theme-green-terminal .text-gray-600, body.theme-green-terminal .text-gray-500 { color: #9fffa6 !important; }
+body.theme-green-terminal a { color: #8ef38f !important; }
+body.theme-green-terminal .border-gray-100, body.theme-green-terminal .border-gray-200, body.theme-green-terminal .border-gray-300 { border-color: rgba(34,197,94,0.08) !important; }
+
+/* Inputs / selects */
+body.theme-green-terminal input, body.theme-green-terminal textarea, body.theme-green-terminal select {
+    background-color: rgba(0,0,0,0.45) !important;
+    color: #dfffe0 !important;
+    border-color: rgba(34,197,94,0.08) !important;
+}
+body.theme-green-terminal ::placeholder { color: #8ff4a0 !important; }
+
+/* Buttons */
+body.theme-green-terminal .bg-gradient-to-r.from-purple-600 { background-image: linear-gradient(90deg,#166534 0%,#059669 100%) !important; }
+body.theme-green-terminal .bg-gradient-to-r.from-orange-500 { background-image: linear-gradient(90deg,#064e2d 0%,#165f3d 100%) !important; }
+
+/* Code / terminal preview */
+body.theme-green-terminal #template-preview code.hljs,
+body.theme-green-terminal pre, body.theme-green-terminal textarea {
+    background: #00120a !important;
+    color: #bfffcf !important;
+}
+body.theme-green-terminal #template-preview .hljs-keyword,
+body.theme-green-terminal #template-preview .hljs-selector-tag,
+body.theme-green-terminal #template-preview .hljs-tag { color: #7eff7e !important; }
+body.theme-green-terminal #template-preview .hljs-string,
+body.theme-green-terminal #template-preview .hljs-attr { color: #6efc6e !important; }
+body.theme-green-terminal #template-preview .hljs-number { color: #9fffb2 !important; }
+body.theme-green-terminal #template-preview .hljs-comment { color: #2f5b3f !important; }
+
+/* Small utility tweaks */
+body.theme-green-terminal .loader-ring { border-top-color: #16a34a !important; }
+body.theme-green-terminal .sidebar-collapsed a[title]:hover::after,
+body.theme-green-terminal .sidebar-collapsed a[title]:hover::before { background: rgba(2,6,2,0.95); color: #dfffe0; border-color: rgba(2,6,2,0.95); }
+
+/* Sidebar-specific theme overrides */
+/* Change the main sidebar background + text to match the terminal look */
+body.theme-green-terminal .bg-slate-800 { background-color: #02130d !important; }
+body.theme-green-terminal .bg-slate-700 { background-color: rgba(2,6,2,0.45) !important; }
+body.theme-green-terminal .bg-slate-600 { background-color: rgba(2,6,2,0.55) !important; }
+body.theme-green-terminal .border-slate-700 { border-color: rgba(34,197,94,0.06) !important; }
+
+/* Sidebar text/icon colors */
+body.theme-green-terminal .text-white { color: #e6ffd8 !important; }
+body.theme-green-terminal .text-slate-300 { color: #9fffa6 !important; }
+body.theme-green-terminal .text-gray-500 { color: #9fffa6 !important; }
+body.theme-green-terminal nav i, body.theme-green-terminal nav .fas { color: inherit !important; }
+
+/* Active nav button (replaces blue with green accent) */
+body.theme-green-terminal .bg-blue-600 {
+    background-image: linear-gradient(90deg,#064e2d 0%,#059669 100%) !important;
+    color: #e6ffd8 !important;
+}
+body.theme-green-terminal .bg-blue-600:hover { filter: brightness(0.95) !important; }
+
+/* Hover states for sidebar nav */
+body.theme-green-terminal .hover\:bg-slate-700:hover,
+body.theme-green-terminal .hover\:bg-slate-600:hover,
+body.theme-green-terminal .hover\:bg-white:hover {
+    background-color: rgba(2,6,2,0.50) !important;
+}
+body.theme-green-terminal .hover\:text-white:hover { color: #e6ffd8 !important; }
+
+/* Ensure sidebar badges / small elements remain legible */
+body.theme-green-terminal .bg-blue-50 { background-color: rgba(5,150,105,0.06) !important; color: #dfffe0 !important; }
+body.theme-green-terminal .bg-green-50 { background-color: rgba(5,150,105,0.06) !important; color: #dfffe0 !important; }
+
+/* Make sure the toggle button matches */
+body.theme-green-terminal .text-slate-300.hover\:text-white:hover { color: #e6ffd8 !important; }
+
+/* Keep contrast on small sidebar tooltips */
+body.theme-green-terminal .sidebar-collapsed a[title]:hover::after { background: rgba(2,6,2,0.98); color: #dfffe0; }
+
+/* --------------------------------------------------------------------------
+   Login page: show BashTower watermark + green background when theme selected
+   - Applied via `body.theme-green-login` (added by login page script)
+   - Keeps original login layout for other themes
+   -------------------------------------------------------------------------- */
+body.theme-green-login {
+    background-image: url('/static/img/BashTower.png') !important;
+    background-repeat: no-repeat !important;
+    background-position: center 50% !important;
+    background-size: 30% !important;
+    background-color: #07120b !important;
+    color: #dfffe0 !important;
+}
+
+/* Override the Tailwind gradient used on login page so the watermark is visible */
+body.theme-green-login.bg-gradient-to-br, body.theme-green-login[class*="bg-gradient-to-br"] {
+    background-image: linear-gradient(180deg, rgba(1,19,13,0.96), rgba(3,27,17,0.96)) !important;
+}
+
+/* Make the circular logo green on the login screen when theme active */
+body.theme-green-login .inline-flex.items-center.justify-center.w-20.h-20.bg-blue-600 {
+    background-image: linear-gradient(90deg,#166534 0%,#059669 100%) !important;
+}
+
+/* Ensure header/footer text on login page is legible */
+body.theme-green-login .text-slate-400 { color: #9fffa6 !important; }
+body.theme-green-login .bg-white.rounded-2xl.shadow-2xl { background-color: rgba(1,19,13,0.98) !important; color: #e6ffd8 !important; border-color: rgba(34,197,94,0.06) !important; }
+
+
+/* Fixes for UI controls that used light Tailwind utilities in components
+   (e.g. tabs, list hover, search inputs). In the green-terminal theme those
+   utilities produced white/light backgrounds while text was changed to a
+   pale green — making labels invisible. Override the common utility classes
+   and hover states so contrast stays readable. */
+body.theme-green-terminal .bg-gray-100 { background-color: rgba(2,6,2,0.50) !important; }
+body.theme-green-terminal .bg-gray-200 { background-color: rgba(2,6,2,0.55) !important; }
+body.theme-green-terminal .bg-gray-50  { background-color: rgba(2,6,2,0.42) !important; }
+
+/* Hover utility overrides (Tailwind uses pseudo-class utilities like .hover:bg-white) */
+body.theme-green-terminal .hover\:bg-white:hover,
+body.theme-green-terminal .hover\:bg-gray-50:hover,
+body.theme-green-terminal .hover\:bg-gray-100:hover,
+body.theme-green-terminal .hover\:bg-gray-200:hover {
+    background-color: rgba(2,6,2,0.52) !important;
+}
+
+/* Ensure list-item hover (often `hover:bg-white`) doesn't flash white */
+body.theme-green-terminal .hover\:bg-white:hover { background-color: rgba(2,6,2,0.45) !important; }
+
+/* Make sure inactive tab text remains readable on the adjusted backgrounds */
+body.theme-green-terminal .text-gray-600 { color: #bfffcf !important; }
+body.theme-green-terminal .text-gray-700 { color: #e6ffdf !important; }
+
+/* Ensure inputs that relied on light bg still look correct */
+body.theme-green-terminal input.pl-8, body.theme-green-terminal input[placeholder] {
+    background-color: rgba(0,0,0,0.45) !important;
+    color: #dfffe0 !important;
+}
+
+/* Dropdown / panel fixes for template lists and similar z-50 menus
+   - Make dropdown panels opaque and increase contrast so underlying UI
+     doesn't bleed through when Green Terminal theme is active. */
+body.theme-green-terminal .absolute.z-50.bg-white,
+body.theme-green-terminal .absolute.z-50.bg-white.border,
+body.theme-green-terminal .bg-white.border.border-gray-200.rounded-lg.shadow-lg,
+body.theme-green-terminal .z-50.max-h-80.overflow-y-auto {
+    background-color: rgba(1,19,13,0.98) !important; /* opaque panel */
+    color: #dfffe0 !important;
+    border-color: rgba(34,197,94,0.06) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.75) !important;
+    backdrop-filter: blur(6px);
+}
+
+/* Make header/search row inside dropdowns darker and opaque */
+body.theme-green-terminal .absolute.z-50 .bg-gray-50,
+body.theme-green-terminal .absolute.z-50 .hover\:bg-gray-50:hover {
+    background-color: rgba(1,19,13,0.90) !important;
+    color: #bfffcf !important;
+    border-color: rgba(34,197,94,0.04) !important;
+}
+
+/* Dropdown item text / hover / selected styles */
+body.theme-green-terminal .absolute.z-50 .w-full.px-4.py-2\.5,
+body.theme-green-terminal .absolute.z-50 button.w-full,
+body.theme-green-terminal .absolute.z-50 .px-4.py-2\.5 {
+    background-color: transparent !important;
+    color: #dfffe0 !important;
+}
+body.theme-green-terminal .absolute.z-50 .hover\:bg-white:hover {
+    background-color: rgba(2,6,2,0.60) !important;
+}
+body.theme-green-terminal .absolute.z-50 .bg-green-50 {
+    background-color: rgba(34,197,94,0.12) !important;
+    color: #e6ffd8 !important;
+}
+
+
+/* Modal-specific visibility fixes for Green Terminal theme
+   - Make backdrop darker and dialog panels more opaque so forms are readable
+   - Targets overlay + modal containers used for Add/Edit Group, Host, Key, etc. */
+body.theme-green-terminal .fixed.inset-0.bg-black.bg-opacity-50,
+body.theme-green-terminal .fixed.inset-0.bg-slate-900\/80 {
+    background-color: rgba(0,0,0,0.78) !important;
+    backdrop-filter: blur(3px) !important;
+}
+
+/* Make modal panels nearly solid (not translucent like other cards) */
+body.theme-green-terminal .fixed.inset-0 .bg-white.rounded-xl,
+body.theme-green-terminal .fixed.inset-0 .bg-white.rounded-2xl,
+body.theme-green-terminal .fixed.inset-0 .bg-white.rounded-xl.shadow-2xl,
+body.theme-green-terminal .fixed.inset-0 .bg-white.rounded-2xl.shadow-2xl {
+    background-color: rgba(1,19,13,0.98) !important; /* very opaque dark panel */
+    color: #e6ffd8 !important;
+    border-color: rgba(34,197,94,0.06) !important;
+    box-shadow: 0 14px 50px rgba(0,0,0,0.75) !important;
+}
+
+/* Modal inner light sections (footer/header backgrounds) */
+body.theme-green-terminal .fixed.inset-0 .bg-gray-50 {
+    background-color: rgba(1,19,13,0.88) !important;
+}
+
+/* Ensure modal buttons and inputs remain high-contrast */
+body.theme-green-terminal .fixed.inset-0 .text-gray-700 { color: #dfffe0 !important; }
+body.theme-green-terminal .fixed.inset-0 input, body.theme-green-terminal .fixed.inset-0 select, body.theme-green-terminal .fixed.inset-0 textarea {
+    background-color: rgba(0,0,0,0.55) !important;
+    color: #dfffe0 !important;
+    border-color: rgba(34,197,94,0.08) !important;
+}
+
+/* Slightly boost modal close button contrast */
+body.theme-green-terminal .fixed.inset-0 .text-gray-400 { color: #9fffa6 !important; }
+body.theme-green-terminal .fixed.inset-0 .text-gray-400:hover { color: #e6ffd8 !important; }
+

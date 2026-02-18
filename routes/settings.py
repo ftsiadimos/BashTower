@@ -76,7 +76,8 @@ def get_settings():
             'ai_endpoint': '',
             'ai_configured': False,
             'cron_history_limit': 0,
-            'auth_disabled': False
+            'auth_disabled': False,
+            'theme': 'default'
         })
     
     # Mask API key for security (show only last 4 chars)
@@ -94,7 +95,8 @@ def get_settings():
         'ai_endpoint': settings.ai_endpoint or '',
         'ai_configured': ai_configured,
         'cron_history_limit': settings.cron_history_limit or 0,
-        'auth_disabled': settings.auth_disabled or False
+        'auth_disabled': settings.auth_disabled or False,
+        'theme': settings.theme or 'default'
     })
 
 
@@ -121,6 +123,9 @@ def save_settings():
     
     # Handle auth_disabled setting
     settings.auth_disabled = data.get('auth_disabled', False)
+
+    # Handle theme selection
+    settings.theme = data.get('theme', 'default')
     
     # Only update API key if a new one is provided (not masked)
     new_key = data.get('ai_api_key', '')

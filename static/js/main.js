@@ -148,7 +148,8 @@ const App = {
                 ai_model: 'gpt-3.5-turbo',
                 ai_endpoint: '',
                 cron_history_limit: 0,
-                auth_disabled: false
+                auth_disabled: false,
+                theme: 'default'
             },
             settingsSaving: false,
             settingsMessage: '',
@@ -438,6 +439,16 @@ const App = {
             this.sidebarCollapsed = window.innerWidth < 768;
         }
 
+        // Restore UI theme from localStorage (applies immediately, server settings will override)
+        try {
+            const savedTheme = localStorage.getItem('bashtower_theme');
+            if (savedTheme) {
+                this.setTheme(savedTheme);
+                // Show the currently active theme in Settings UI immediately
+                if (this.settingsForm) this.settingsForm.theme = savedTheme;
+            }
+        } catch (e) { /* ignore */ }
+
         // Load essential data for dashboard
         this.loadViewData('dashboard');
         
@@ -505,6 +516,18 @@ const App = {
             try {
                 localStorage.setItem('sidebarCollapsed', this.sidebarCollapsed);
             } catch (e) { /* ignore */ }
+        },
+
+        // Apply selected UI theme (adds a body class like `theme-green-terminal`)
+        setTheme(theme) {
+            // remove any known theme-* classes
+            document.body.classList.remove('theme-green-terminal', 'theme-dark');
+            if (theme && theme !== 'default') {
+                document.body.classList.add(`theme-${theme}`);
+            }
+            try {
+                localStorage.setItem('bashtower_theme', theme || 'default');
+            } catch (e) { /**/ }
         },
 
         // --------------------------------------------------------------------

@@ -47,6 +47,36 @@
             z-index: 0;
             background-blend-mode: normal;
         }
+
+        /* Green-terminal: tint white parts of the watermark and loader background */
+        body.theme-green-terminal #page-loading-overlay {
+            background: linear-gradient(180deg, rgba(2,6,2,0.96), rgba(3,27,17,0.96));
+            color: #dfffe0;
+        }
+        /* For the green theme: show a green gradient as the backdrop (::before) and
+           render the original PNG on top as a separate pseudo-element (::after)
+           so the image itself is not tinted while the surrounding white appears against green. */
+        body.theme-green-terminal #page-loading-overlay::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(2,6,2,0.96), rgba(3,27,17,0.96));
+            z-index: 0;
+            pointer-events: none;
+        }
+        body.theme-green-terminal #page-loading-overlay::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url("{{ url_for('static', filename='img/BashTower.png') }}");
+            background-repeat: no-repeat;
+            background-position: center 50%;
+            background-size: 30%;
+            z-index: 1; /* sit above the green backdrop but below the loader */
+            pointer-events: none;
+            background-blend-mode: normal;
+            opacity: 1;
+        }
         #page-loading-overlay.hidden{
             opacity:0;
             visibility:hidden;
@@ -99,6 +129,14 @@
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800 h-screen overflow-hidden">
+    <!-- Apply saved theme immediately so initial loading overlay respects it -->
+    <script>
+        try {
+            const t = localStorage.getItem('bashtower_theme');
+            if (t === 'green-terminal') document.body.classList.add('theme-green-terminal');
+        } catch (e) { /* ignore */ }
+    </script>
+
     <!-- Loading overlay (visible immediately on refresh) -->
     <div id="page-loading-overlay">
         <div class="flex items-center relative z-10">

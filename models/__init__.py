@@ -174,6 +174,8 @@ class AppSettings(db.Model):
     cron_history_limit = db.Column(db.Integer, default=0)  # 0 = unlimited, otherwise max rows to keep
     # Authentication settings
     auth_disabled = db.Column(db.Boolean, default=False)  # When True, skip login requirement
+    # UI Theme
+    theme = db.Column(db.String(50), default='default')  # e.g. 'default', 'green-terminal'
     
     @property
     def ai_api_key(self):
