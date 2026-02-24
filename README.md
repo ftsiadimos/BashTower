@@ -135,6 +135,10 @@ docker run -d \
 version: '3.8'
 services:
   bashtower:
+  # You can use either image from Docker Hub or GitHub Container Registry (GHCR):
+  # image: ftsiadimos/bashtower
+  # or
+  # image: ghcr.io/ftsiadimos/bashtower:latest
     image: ftsiadimos/bashtower
     container_name: bashtower
     ports:
