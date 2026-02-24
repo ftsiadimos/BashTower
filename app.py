@@ -89,6 +89,19 @@ def create_app():
     app.register_blueprint(users_bp)
     app.register_blueprint(git_sync_bp)
     
+    # Read version from VERSION file
+    def get_version():
+        try:
+            with open(os.path.join(os.path.dirname(__file__), 'VERSION')) as f:
+                return f.read().strip()
+        except Exception:
+            return "dev"
+
+    # Inject version into all templates
+    @app.context_processor
+    def inject_version():
+        return dict(version=get_version())
+
     # Login route
     @app.route('/login')
     def login_page():
