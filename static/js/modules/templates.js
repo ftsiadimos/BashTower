@@ -401,6 +401,8 @@ const TemplatesMethods = {
             try { if (this._fullEditorInstance) { this._fullEditorInstance.destroy(); delete this._fullEditorInstance; } } catch(e){}
 
             if (window.ace && typeof window.ace.edit === 'function') {
+                // Set base path so Ace loads modes/themes from local vendor directory
+                window.ace.config.set('basePath', '/static/vendor/js/ace');
                 this._fullEditorInstance = window.ace.edit(el);
                 const theme = 'ace/theme/monokai';
                 this._fullEditorInstance.setTheme(theme);
