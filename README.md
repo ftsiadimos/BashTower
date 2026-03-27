@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="mis/BashTower.png" width="120" alt="BashTower Logo">
+  <img src="mis/BashTower.webp" width="120" alt="BashTower Logo">
 </p>
 
 <h1 align="center">BashTower</h1>
@@ -29,7 +29,7 @@
 
 | Dashboard overview | AI Troubleshooter modal |
 | --- | --- |
-| <a href="mis/image1.png" target="_blank"><img src="mis/image1.png" width="420" alt="Dashboard View"></a> | <a href="mis/image2.png" target="_blank"><img src="mis/image2.png" width="420" alt="AI Troubleshooter modal"></a> |
+| <a href="mis/image1.webp" target="_blank"><img src="mis/image1.webp" width="420" alt="Dashboard View"></a> | <a href="mis/image2.webp" target="_blank"><img src="mis/image2.webp" width="420" alt="AI Troubleshooter modal"></a> |
 | *Templates overview* | *AI Troubleshooter modal* |
 
 ---

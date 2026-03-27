@@ -191,7 +191,7 @@ body.theme-green-terminal .sidebar-collapsed a[title]:hover::after { background:
    - Keeps original login layout for other themes
    -------------------------------------------------------------------------- */
 body.theme-green-login {
-    background-image: url('/static/img/BashTower.png') !important;
+    background-image: url('/static/img/BashTower.webp') !important;
     background-repeat: no-repeat !important;
     background-position: center 50% !important;
     background-size: 30% !important;
