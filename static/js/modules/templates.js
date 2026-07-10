@@ -13,6 +13,9 @@ const TemplatesData = () => ({
     templateDropdownOpen: false,
     templateDropdownSearch: '',
 
+    // View mode toggle (grid or list)
+    templatesViewMode: 'grid',
+
     // Preview modal for easier reading of scripts
     previewTemplate: null,
     previewOpen: false,

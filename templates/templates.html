@@ -13,6 +13,21 @@
                 <input type="text" v-model="templateSearchQuery" placeholder="Search templates..." 
                     class="pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none transition">
             </div>
+            <!-- View Toggle Switch -->
+            <div class="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1 shadow-sm">
+                <button @click="templatesViewMode = 'grid'" 
+                    :class="templatesViewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'"
+                    class="px-3 py-1.5 rounded transition text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-grip"></i>
+                    <span class="hidden sm:inline">Grid</span>
+                </button>
+                <button @click="templatesViewMode = 'list'" 
+                    :class="templatesViewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'"
+                    class="px-3 py-1.5 rounded transition text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-list"></i>
+                    <span class="hidden sm:inline">List</span>
+                </button>
+            </div>
             <button @click="openGitSyncModal" class="px-4 py-2.5 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition font-medium flex items-center justify-center gap-2 shadow-md">
                 <i class="fab fa-git-alt"></i> <span>Git Sync</span>
             </button>
@@ -688,8 +703,8 @@
         </div>
     </div>
 
-    <!-- Templates Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+    <!-- Templates Grid/List View -->
+    <div v-if="templatesViewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         <div v-for="t in filteredTemplates" :key="t.id" 
             class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden group">
 
@@ -799,6 +814,132 @@
                 <h3 class="text-lg font-semibold text-gray-700 mb-2">No Results Found</h3>
                 <p class="text-gray-500">No templates match "<span class="font-medium">[[ templateSearchQuery ]]</span>"</p>
             </div>
+        </div>
+    </div>
+
+    <!-- Templates List View -->
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <!-- Table Display -->
+        <div v-if="filteredTemplates.length > 0" class="overflow-x-auto">
+            <!-- Preview Modal for List View (Outside Table) -->
+            <div v-if="previewOpen && previewTemplate" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 p-4" @click.self="closePreview">
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+                    <div class="p-4 flex items-center justify-between bg-gray-800 text-white">
+                        <div class="flex items-center gap-3">
+                            <i class="fab fa-python text-yellow-300" v-if="previewTemplate.script_type === 'python'"></i>
+                            <i class="fas fa-terminal text-white" v-else></i>
+                            <div class="ml-2">
+                                <div class="font-semibold">[[ previewTemplate.name ]]</div>
+                                <div class="text-xs text-gray-300">[[ previewTemplate.script_type ]] • [[ previewTemplate.script ? previewTemplate.script.replace(/\r\n|\r/g,'\n').replace(/\n+$/,'').split('\n').length : 0 ]] lines</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button @click.stop="copyScriptFromPreview" class="px-3 py-1.5 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition">Copy</button>
+                            <button @click.stop="closePreview" class="px-3 py-1.5 bg-white/10 text-white rounded text-xs hover:bg-white/20 transition">Close</button>
+                        </div>
+                    </div>
+                    <div class="p-4 overflow-auto bg-black text-gray-100">
+                        <pre id="template-preview" class="rounded text-sm bg-black"><code :class="'language-' + (previewTemplate.script_type === 'python' ? 'python' : 'bash')" v-text="previewTemplate.script"></code></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Lines</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Size</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</span>
+                        </th>
+                        <th class="px-6 py-4 text-right">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <tr v-for="t in filteredTemplates" :key="t.id" class="hover:bg-gray-50 transition">
+                        <!-- Name with Icon -->
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                    :class="t.script_type === 'python' ? 'bg-yellow-100' : 'bg-blue-100'">
+                                    <i :class="t.script_type === 'python' ? 'fab fa-python text-yellow-600' : 'fas fa-terminal text-blue-600'"></i>
+                                </div>
+                                <span class="font-medium text-gray-900">[[ t.name ]]</span>
+                            </div>
+                        </td>
+                        
+                        <!-- Type -->
+                        <td class="px-6 py-4">
+                            <span :class="t.script_type === 'python' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'" 
+                                class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full">
+                                <i :class="t.script_type === 'python' ? 'fab fa-python' : 'fas fa-terminal'"></i>
+                                [[ t.script_type === 'python' ? 'Python' : 'Bash' ]]
+                            </span>
+                        </td>
+                        
+                        <!-- Lines -->
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-600">[[ t.script ? t.script.replace(/\r\n|\r/g, '\n').replace(/\n+$/,'').split('\n').length : 0 ]]</span>
+                        </td>
+                        
+                        <!-- Size -->
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-600">[[ (t.script ? t.script.length : 0) ]] bytes</span>
+                        </td>
+                        
+                        <!-- ID -->
+                        <td class="px-6 py-4">
+                            <span class="text-xs text-gray-500 font-mono">[[ String(t.id).substring(0, 8) ]]...</span>
+                        </td>
+                        
+                        <!-- Actions -->
+                        <td class="px-6 py-4">
+                            <div class="flex items-center justify-end gap-2">
+                                <button @click.stop="openPreview(t)" class="px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded transition text-xs font-medium">
+                                    <i class="fas fa-eye mr-1"></i> Preview
+                                </button>
+                                <button @click="editTemplate(t)" class="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded transition text-xs font-medium">
+                                    <i class="fas fa-edit mr-1"></i> Edit
+                                </button>
+                                <button @click="deleteTemplate(t.id)" class="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded transition text-xs font-medium">
+                                    <i class="fas fa-trash-alt mr-1"></i> Delete
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty States for List View -->
+        <div v-else-if="templates.length === 0" class="p-16 text-center">
+            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-file-code text-gray-400 text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">No Templates Yet</h3>
+            <p class="text-gray-500 mb-6">Create your first script template (Bash or Python) to get started</p>
+            <button @click="startNewTemplate" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium inline-flex items-center gap-2">
+                <i class="fas fa-plus"></i> Create Your First Template
+            </button>
+        </div>
+        <div v-else class="p-12 text-center">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-search text-gray-400 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">No Results Found</h3>
+            <p class="text-gray-500">No templates match "<span class="font-medium">[[ templateSearchQuery ]]</span>"</p>
         </div>
     </div>
 </div>

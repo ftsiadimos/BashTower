@@ -450,6 +450,21 @@ const App = {
             }
         } catch (e) { /* ignore */ }
 
+        // Restore templates view mode from localStorage
+        try {
+            const savedViewMode = localStorage.getItem('bashtower_templates_view');
+            if (savedViewMode && (savedViewMode === 'grid' || savedViewMode === 'list')) {
+                this.templatesViewMode = savedViewMode;
+            }
+        } catch (e) { /* ignore */ }
+
+        // Watch templates view mode changes and persist to localStorage
+        this.$watch('templatesViewMode', (newMode) => {
+            try {
+                localStorage.setItem('bashtower_templates_view', newMode);
+            } catch (e) { /* ignore localStorage errors */ }
+        });
+
         // Load essential data for dashboard
         this.loadViewData('dashboard');
         
