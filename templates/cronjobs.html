@@ -13,6 +13,21 @@
                 <input type="text" v-model="cronJobSearchQuery" placeholder="Search cron jobs..." 
                     class="pl-9 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 outline-none transition">
             </div>
+            <!-- View Toggle Switch -->
+            <div class="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1 shadow-sm">
+                <button @click="cronJobsViewMode = 'grid'" 
+                    :class="cronJobsViewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-700'"
+                    class="px-3 py-1.5 rounded transition text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-grip"></i>
+                    <span class="hidden sm:inline">Grid</span>
+                </button>
+                <button @click="cronJobsViewMode = 'list'" 
+                    :class="cronJobsViewMode === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-500 hover:text-gray-700'"
+                    class="px-3 py-1.5 rounded transition text-sm font-medium flex items-center gap-1">
+                    <i class="fas fa-list"></i>
+                    <span class="hidden sm:inline">List</span>
+                </button>
+            </div>
             <button @click="startNewCronJob" class="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition font-medium flex items-center justify-center gap-2 shadow-md">
                 <i class="fas fa-plus"></i> <span>New Cron Job</span>
             </button>
@@ -284,8 +299,8 @@
         </div>
     </div>
 
-    <!-- Cron Jobs Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+    <!-- Cron Jobs Grid/List View -->
+    <div v-if="cronJobsViewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
         <div v-for="job in filteredCronJobs" :key="job.id" 
             class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden">
             <!-- Header with Status -->
@@ -394,4 +409,117 @@
             </div>
         </div>
     </div>
-</div> 
+
+    <!-- Cron Jobs List View -->
+    <div v-else class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <!-- Table Display -->
+        <div v-if="filteredCronJobs.length > 0" class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Schedule</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Template</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Targets</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</span>
+                        </th>
+                        <th class="px-6 py-4 text-left">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Next Run</span>
+                        </th>
+                        <th class="px-6 py-4 text-right">
+                            <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</span>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    <tr v-for="job in filteredCronJobs" :key="job.id" class="hover:bg-gray-50 transition">
+                        <!-- Name with Icon -->
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                                    :class="job.enabled ? 'bg-green-100' : 'bg-gray-100'">
+                                    <i :class="job.enabled ? 'fas fa-clock text-green-600' : 'fas fa-clock text-gray-500'"></i>
+                                </div>
+                                <span class="font-medium text-gray-900">[[ job.name ]]</span>
+                            </div>
+                        </td>
+                        
+                        <!-- Schedule -->
+                        <td class="px-6 py-4">
+                            <code class="text-sm font-mono bg-slate-100 text-slate-800 px-2 py-1 rounded">[[ job.schedule ]]</code>
+                        </td>
+                        
+                        <!-- Template -->
+                        <td class="px-6 py-4">
+                            <span :class="getTemplateById(job.template_id)?.script_type === 'python' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'" 
+                                class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full">
+                                <i :class="getTemplateById(job.template_id)?.script_type === 'python' ? 'fab fa-python' : 'fas fa-terminal'"></i>
+                                [[ getTemplateNameById(job.template_id) ]]
+                            </span>
+                        </td>
+                        
+                        <!-- Targets -->
+                        <td class="px-6 py-4">
+                            <span class="text-sm text-gray-600">[[ job.host_ids.length ]] host(s)</span>
+                        </td>
+                        
+                        <!-- Status -->
+                        <td class="px-6 py-4">
+                            <span :class="job.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-600'" 
+                                class="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-full">
+                                <i :class="job.enabled ? 'fas fa-circle-check' : 'fas fa-circle-pause'" class="mr-1"></i>
+                                [[ job.enabled ? 'Active' : 'Paused' ]]
+                            </span>
+                        </td>
+                        
+                        <!-- Next Run -->
+                        <td class="px-6 py-4">
+                            <span v-if="job.next_run" class="text-sm text-gray-600">[[ new Date(job.next_run).toLocaleString() ]]</span>
+                            <span v-else class="text-sm text-gray-400 italic">Not scheduled</span>
+                        </td>
+                        
+                        <!-- Actions -->
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button @click="editCronJob(job)" class="px-3 py-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition text-sm font-medium">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button @click="deleteCronJob(job.id)" class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Empty States -->
+        <div v-if="cronjobs.length === 0" class="p-12 text-center">
+            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-clock text-gray-400 text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">No Cron Jobs Yet</h3>
+            <p class="text-gray-500 mb-6">Create your first scheduled job to automate script execution</p>
+            <button @click="startNewCronJob" class="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium inline-flex items-center gap-2">
+                <i class="fas fa-plus"></i> Create Your First Cron Job
+            </button>
+        </div>
+        <div v-else-if="filteredCronJobs.length === 0" class="p-12 text-center">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-search text-gray-400 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">No Results Found</h3>
+            <p class="text-gray-500">No cron jobs match "<span class="font-medium">[[ cronJobSearchQuery ]]</span>"</p>
+        </div>
+    </div>
+</div>

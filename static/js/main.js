@@ -110,6 +110,7 @@ const App = {
             cronjobs: [],
             editingCronJob: false,
             cronJobSearchQuery: '',
+            cronJobsViewMode: 'grid',
             cronHostSearchQuery: '',
             cronGroupSearchQuery: '',
             cronTemplateSearchQuery: '',
@@ -462,6 +463,21 @@ const App = {
         this.$watch('templatesViewMode', (newMode) => {
             try {
                 localStorage.setItem('bashtower_templates_view', newMode);
+            } catch (e) { /* ignore localStorage errors */ }
+        });
+
+        // Restore cron jobs view mode from localStorage
+        try {
+            const savedViewMode = localStorage.getItem('bashtower_cronjobs_view');
+            if (savedViewMode && (savedViewMode === 'grid' || savedViewMode === 'list')) {
+                this.cronJobsViewMode = savedViewMode;
+            }
+        } catch (e) { /* ignore */ }
+
+        // Watch cron jobs view mode changes and persist to localStorage
+        this.$watch('cronJobsViewMode', (newMode) => {
+            try {
+                localStorage.setItem('bashtower_cronjobs_view', newMode);
             } catch (e) { /* ignore localStorage errors */ }
         });
 
