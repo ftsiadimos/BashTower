@@ -466,6 +466,36 @@ const App = {
             } catch (e) { /* ignore localStorage errors */ }
         });
 
+        // Restore hosts view mode from localStorage
+        try {
+            const savedViewMode = localStorage.getItem('bashtower_hosts_view');
+            if (savedViewMode && (savedViewMode === 'grid' || savedViewMode === 'list')) {
+                this.hostsViewMode = savedViewMode;
+            }
+        } catch (e) { /* ignore */ }
+
+        // Watch hosts view mode changes and persist to localStorage
+        this.$watch('hostsViewMode', (newMode) => {
+            try {
+                localStorage.setItem('bashtower_hosts_view', newMode);
+            } catch (e) { /* ignore localStorage errors */ }
+        });
+
+        // Restore groups view mode from localStorage
+        try {
+            const savedViewMode = localStorage.getItem('bashtower_groups_view');
+            if (savedViewMode && (savedViewMode === 'grid' || savedViewMode === 'list')) {
+                this.groupsViewMode = savedViewMode;
+            }
+        } catch (e) { /* ignore */ }
+
+        // Watch groups view mode changes and persist to localStorage
+        this.$watch('groupsViewMode', (newMode) => {
+            try {
+                localStorage.setItem('bashtower_groups_view', newMode);
+            } catch (e) { /* ignore localStorage errors */ }
+        });
+
         // Restore cron jobs view mode from localStorage
         try {
             const savedViewMode = localStorage.getItem('bashtower_cronjobs_view');

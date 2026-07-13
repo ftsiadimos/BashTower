@@ -9,7 +9,8 @@ const HostsData = () => ({
     hostForm: { id: null, name: '', hostname: '', username: '', port: 22 },
     hostPageSearchQuery: '',
     showHostModal: false,
-    editingHost: null
+    editingHost: null,
+    hostsViewMode: 'grid'
 });
 
 const HostsComputed = {

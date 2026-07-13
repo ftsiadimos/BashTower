@@ -60,9 +60,9 @@
         </div>
     </div>
 
-    <!-- Search Bar -->
-    <div class="mb-6">
-        <div class="relative">
+    <!-- Search Bar and View Toggle -->
+    <div class="mb-6 flex flex-col sm:flex-row gap-4">
+        <div class="relative flex-1">
             <input 
                 type="text" 
                 v-model="groupPageSearchQuery" 
@@ -74,10 +74,25 @@
                 [[ filteredGroupsPage.length ]] of [[ groups.length ]]
             </span>
         </div>
+        <!-- View Toggle Switch -->
+        <div class="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1 shadow-sm self-start sm:self-center">
+            <button @click="groupsViewMode = 'grid'" 
+                :class="groupsViewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'"
+                class="px-3 py-1.5 rounded transition text-sm font-medium flex items-center gap-1">
+                <i class="fas fa-grip"></i>
+                <span class="hidden sm:inline">Grid</span>
+            </button>
+            <button @click="groupsViewMode = 'list'" 
+                :class="groupsViewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'"
+                class="px-3 py-1.5 rounded transition text-sm font-medium flex items-center gap-1">
+                <i class="fas fa-list"></i>
+                <span class="hidden sm:inline">List</span>
+            </button>
+        </div>
     </div>
 
     <!-- Groups Grid -->
-    <div v-if="filteredGroupsPage.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div v-if="groupsViewMode === 'grid' && filteredGroupsPage.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="g in filteredGroupsPage" :key="g.id" 
             class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
             
@@ -126,8 +141,75 @@
         </div>
     </div>
 
+    <!-- Groups List View -->
+    <div v-if="groupsViewMode === 'list' && filteredGroupsPage.length > 0" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</span>
+                    </th>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Hosts</span>
+                    </th>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Member Hosts</span>
+                    </th>
+                    <th class="px-6 py-4 text-right">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                <tr v-for="g in filteredGroupsPage" :key="g.id" class="hover:bg-gray-50 transition">
+                    <!-- Name with Icon -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-layer-group text-white text-sm"></i>
+                            </div>
+                            <span class="font-medium text-gray-900">[[ g.name ]]</span>
+                        </div>
+                    </td>
+                    
+                    <!-- Host Count -->
+                    <td class="px-6 py-4">
+                        <span class="text-sm font-semibold text-gray-700">[[ g.host_ids.length ]]</span>
+                    </td>
+                    
+                    <!-- Member Hosts -->
+                    <td class="px-6 py-4">
+                        <div v-if="g.host_ids.length > 0" class="flex flex-wrap gap-1">
+                            <span v-for="(hostId, idx) in g.host_ids.slice(0, 3)" :key="hostId" 
+                                class="px-2 py-1 bg-white border border-gray-200 text-gray-700 rounded text-xs font-medium">
+                                <i class="fas fa-server mr-1 text-gray-400"></i>[[ getHostName(hostId) ]]
+                            </span>
+                            <span v-if="g.host_ids.length > 3" 
+                                class="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium">
+                                +[[ g.host_ids.length - 3 ]]
+                            </span>
+                        </div>
+                        <span v-else class="text-xs text-gray-400 italic">-</span>
+                    </td>
+                    
+                    <!-- Actions -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center justify-end gap-2">
+                            <button @click="editGroup(g)" class="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded transition text-xs font-medium">
+                                <i class="fas fa-edit mr-1"></i> Edit
+                            </button>
+                            <button @click="deleteGroup(g.id)" class="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded transition text-xs font-medium">
+                                <i class="fas fa-trash-alt mr-1"></i> Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <!-- Empty State -->
-    <div v-else class="text-center py-16 bg-white rounded-xl border border-gray-200">
+    <div v-else-if="filteredGroupsPage.length === 0" class="text-center py-16 bg-white rounded-xl border border-gray-200">
         <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <i class="fas fa-layer-group text-3xl text-gray-300"></i>
         </div>

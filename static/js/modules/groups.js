@@ -9,7 +9,8 @@ const GroupsData = () => ({
     editingGroup: false,
     groupForm: { id: null, name: '', host_ids: [] },
     groupSearchQuery: '',
-    groupPageSearchQuery: ''
+    groupPageSearchQuery: '',
+    groupsViewMode: 'grid'
 });
 
 const GroupsComputed = {

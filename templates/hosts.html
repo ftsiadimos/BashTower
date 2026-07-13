@@ -60,9 +60,9 @@
         </div>
     </div>
 
-    <!-- Search Bar -->
-    <div class="mb-6">
-        <div class="relative">
+    <!-- Search Bar and View Toggle -->
+    <div class="mb-6 flex flex-col sm:flex-row gap-4">
+        <div class="relative flex-1">
             <input 
                 type="text" 
                 v-model="hostPageSearchQuery" 
@@ -74,10 +74,25 @@
                 [[ filteredHostsPage.length ]] of [[ hosts.length ]]
             </span>
         </div>
+        <!-- View Toggle Switch -->
+        <div class="flex items-center gap-2 bg-white border border-gray-300 rounded-lg p-1 shadow-sm self-start sm:self-center">
+            <button @click="hostsViewMode = 'grid'" 
+                :class="hostsViewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'"
+                class="px-3 py-1.5 rounded transition text-sm font-medium flex items-center gap-1">
+                <i class="fas fa-grip"></i>
+                <span class="hidden sm:inline">Grid</span>
+            </button>
+            <button @click="hostsViewMode = 'list'" 
+                :class="hostsViewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:text-gray-700'"
+                class="px-3 py-1.5 rounded transition text-sm font-medium flex items-center gap-1">
+                <i class="fas fa-list"></i>
+                <span class="hidden sm:inline">List</span>
+            </button>
+        </div>
     </div>
 
     <!-- Hosts Grid -->
-    <div v-if="filteredHostsPage.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div v-if="hostsViewMode === 'grid' && filteredHostsPage.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div v-for="h in filteredHostsPage" :key="h.id" 
             class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group">
             
@@ -136,8 +151,99 @@
         </div>
     </div>
 
+    <!-- Hosts List View -->
+    <div v-if="hostsViewMode === 'list' && filteredHostsPage.length > 0" class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</span>
+                    </th>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Hostname</span>
+                    </th>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">User</span>
+                    </th>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Port</span>
+                    </th>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Shell</span>
+                    </th>
+                    <th class="px-6 py-4 text-left">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Groups</span>
+                    </th>
+                    <th class="px-6 py-4 text-right">
+                        <span class="text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                <tr v-for="h in filteredHostsPage" :key="h.id" class="hover:bg-gray-50 transition">
+                    <!-- Name -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-server text-white text-sm"></i>
+                            </div>
+                            <span class="font-medium text-gray-900">[[ h.name ]]</span>
+                        </div>
+                    </td>
+                    
+                    <!-- Hostname -->
+                    <td class="px-6 py-4">
+                        <span class="text-sm text-gray-600 font-mono">[[ h.hostname ]]</span>
+                    </td>
+                    
+                    <!-- User -->
+                    <td class="px-6 py-4">
+                        <span class="text-sm text-gray-600">[[ h.username ]]</span>
+                    </td>
+                    
+                    <!-- Port -->
+                    <td class="px-6 py-4">
+                        <span class="text-sm font-mono text-gray-600">[[ h.port ]]</span>
+                    </td>
+                    
+                    <!-- Shell -->
+                    <td class="px-6 py-4">
+                        <span class="text-sm font-mono text-gray-600">[[ h.shell ]]</span>
+                    </td>
+                    
+                    <!-- Groups -->
+                    <td class="px-6 py-4">
+                        <div v-if="h.group_ids && h.group_ids.length > 0" class="flex flex-wrap gap-1">
+                            <span v-for="(gid, idx) in h.group_ids.slice(0, 2)" :key="gid" 
+                                class="px-2 py-1 bg-slate-200 text-slate-700 rounded text-xs font-medium">
+                                [[ getGroupName(gid) ]]
+                            </span>
+                            <span v-if="h.group_ids.length > 2" 
+                                class="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs font-medium">
+                                +[[ h.group_ids.length - 2 ]]
+                            </span>
+                        </div>
+                        <span v-else class="text-xs text-gray-400 italic">-</span>
+                    </td>
+                    
+                    <!-- Actions -->
+                    <td class="px-6 py-4">
+                        <div class="flex items-center justify-end gap-2">
+                            <button @click="editHost(h)" class="px-3 py-1.5 text-blue-600 hover:bg-blue-50 rounded transition text-xs font-medium">
+                                <i class="fas fa-edit mr-1"></i> Edit
+                            </button>
+                            <button @click="deleteHost(h.id)" class="px-3 py-1.5 text-red-600 hover:bg-red-50 rounded transition text-xs font-medium">
+                                <i class="fas fa-trash-alt mr-1"></i> Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
     <!-- Empty State -->
-    <div v-else class="text-center py-16 bg-white rounded-xl border border-gray-200">
+    <div v-else-if="filteredHostsPage.length === 0" class="text-center py-16 bg-white rounded-xl border border-gray-200">
         <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <i class="fas fa-server text-3xl text-gray-300"></i>
         </div>
