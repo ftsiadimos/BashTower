@@ -33,6 +33,10 @@ const TemplatesData = () => ({
     fullEditorOpen: false,
     // Full editor cursor position display
     fullEditorCursor: 'Ln 1, Col 1',
+    // Editor search state
+    editorSearchOpen: false,
+    editorSearchQuery: '',
+    editorSearchIndex: 0,
 
     // Git Sync state
     gitSyncModalOpen: false,
@@ -523,6 +527,8 @@ const TemplatesMethods = {
         } catch(e) { console.warn('cleanup error', e); }
 
         this.fullEditorOpen = false;
+        this.editorSearchOpen = false;
+        this.editorSearchQuery = '';
         this.$nextTick(() => {
             try { if (this._fullEditorInstance) { this._fullEditorInstance.destroy(); delete this._fullEditorInstance; } } catch(e){}
         });
@@ -537,20 +543,90 @@ const TemplatesMethods = {
         });
     },
 
-    // Open Ace search box (or trigger editor find)
+    // Open editor search UI
     openEditorSearch() {
-        if (!this._fullEditorInstance) return;
+        this.editorSearchOpen = true;
+        this.$nextTick(() => {
+            const input = document.querySelector('.full-screen-editor-search-input');
+            if (input) input.focus();
+        });
+    },
+
+    // Close editor search UI
+    closeEditorSearch() {
+        this.editorSearchOpen = false;
+        this.editorSearchQuery = '';
+        this.editorSearchIndex = 0;
+        if (this._fullEditorInstance) {
+            try { this._fullEditorInstance.clearSelection(); } catch(e){}
+        }
+    },
+
+    // Find next occurrence of search text
+    findNextEditorText() {
+        if (!this._fullEditorInstance || !this.editorSearchQuery) return;
+        
         try {
-            const SearchBox = window.ace.require && window.ace.require('ace/ext/searchbox');
-            if (SearchBox) {
-                SearchBox.Search(this._fullEditorInstance, true);
-            } else {
-                // fallback: open builtin find
-                this._fullEditorInstance.execCommand('find');
+            const Range = window.ace.require('ace/range').Range;
+            const content = this._fullEditorInstance.getValue();
+            const searchText = this.editorSearchQuery;
+            const startPos = this._fullEditorInstance.getCursorPosition();
+            
+            // Start searching from current position
+            let startIndex = this._fullEditorInstance.session.doc.positionToIndex(startPos);
+            let foundIndex = content.indexOf(searchText, startIndex + 1);
+            
+            // Wrap around to beginning if not found
+            if (foundIndex === -1) {
+                foundIndex = content.indexOf(searchText, 0);
+            }
+            
+            if (foundIndex !== -1) {
+                const range = new Range(
+                    this._fullEditorInstance.session.doc.indexToPosition(foundIndex).row,
+                    this._fullEditorInstance.session.doc.indexToPosition(foundIndex).column,
+                    this._fullEditorInstance.session.doc.indexToPosition(foundIndex + searchText.length).row,
+                    this._fullEditorInstance.session.doc.indexToPosition(foundIndex + searchText.length).column
+                );
+                this._fullEditorInstance.selection.setRange(range);
+                this._fullEditorInstance.centerSelection();
             }
         } catch (e) {
-            console.warn('Search extension not available', e);
-            try { this._fullEditorInstance.execCommand('find'); } catch(e){}
+            console.warn('Search error:', e);
+        }
+    },
+
+    // Find previous occurrence of search text
+    findPrevEditorText() {
+        if (!this._fullEditorInstance || !this.editorSearchQuery) return;
+        
+        try {
+            const Range = window.ace.require('ace/range').Range;
+            const content = this._fullEditorInstance.getValue();
+            const searchText = this.editorSearchQuery;
+            const startPos = this._fullEditorInstance.getCursorPosition();
+            
+            // Start searching from current position
+            let startIndex = this._fullEditorInstance.session.doc.positionToIndex(startPos);
+            let foundIndex = content.lastIndexOf(searchText, startIndex - 1);
+            
+            // Wrap around to end if not found
+            if (foundIndex === -1) {
+                foundIndex = content.lastIndexOf(searchText);
+            }
+            
+            if (foundIndex !== -1) {
+                const range = new Range(
+                    this._fullEditorInstance.session.doc.indexToPosition(foundIndex).row,
+                    this._fullEditorInstance.session.doc.indexToPosition(foundIndex).column,
+                    this._fullEditorInstance.session.doc.indexToPosition(foundIndex + searchText.length).row,
+                    this._fullEditorInstance.session.doc.indexToPosition(foundIndex + searchText.length).column
+                );
+                this._fullEditorInstance.selection.setRange(range);
+                this._fullEditorInstance.centerSelection();
+            }
+        } catch (e) {
+            console.warn('Search error:', e);
         }
     },
 

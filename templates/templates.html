@@ -627,8 +627,24 @@
                                 <span class="text-xs text-gray-300">[[ templateForm.script_type === 'python' ? 'Python' : 'Bash' ]] — Press <kbd class="bg-gray-700 px-2 py-0.5 rounded">Ctrl-S</kbd> to apply</span>
                             </div>
                             <div class="flex items-center gap-2">
-                                <!-- Editor toolbar: search -->
-                                <button @click="openEditorSearch" class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm">Search</button>
+                                <!-- Editor toolbar: search input -->
+                                <div v-if="editorSearchOpen" class="flex items-center gap-1">
+                                    <input v-model="editorSearchQuery" @keydown.enter="findNextEditorText" @keydown.escape="closeEditorSearch"
+                                        type="text" placeholder="Find..." 
+                                        class="full-screen-editor-search-input px-2 py-1 rounded bg-gray-700 text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 w-40">
+                                    <button @click="findNextEditorText" class="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm" title="Find Next">
+                                        <i class="fas fa-arrow-down text-xs"></i>
+                                    </button>
+                                    <button @click="findPrevEditorText" class="px-2 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm" title="Find Previous">
+                                        <i class="fas fa-arrow-up text-xs"></i>
+                                    </button>
+                                    <button @click="closeEditorSearch" class="px-2 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-sm">
+                                        <i class="fas fa-times text-xs"></i>
+                                    </button>
+                                </div>
+                                <button v-else @click="openEditorSearch" class="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-white text-sm">
+                                    <i class="fas fa-search mr-1"></i>Search
+                                </button>
                                 <button @click="applyFullEditor" class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white">Apply</button>
                                 <button @click="closeFullEditor" class="px-3 py-1 bg-gray-600 hover:bg-gray-700 rounded text-white">Close</button>
                                 <span class="ml-4 text-xs text-gray-300 font-mono">[[ fullEditorCursor ]]</span>
