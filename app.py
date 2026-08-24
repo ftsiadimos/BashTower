@@ -14,7 +14,7 @@ import logging
 from datetime import timedelta
 from flask import Flask, render_template, redirect, url_for, session
 from extensions import db, migrate, scheduler
-from services.cron_service import load_cron_jobs_into_scheduler
+from services.cron_service import load_cron_jobs_into_scheduler, schedule_satellite_auto_sync
 
 
 def setup_logging(app):
@@ -146,6 +146,10 @@ def create_app():
 # Create the application instance
 app = create_app()
 
+# Store app reference in extensions for scheduler jobs to access
+import extensions as ext
+ext.app_context = app
+
 # Start the scheduler only in the main process (avoids duplicate schedulers when using Flask's reloader)
 if (not app.debug) or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
     scheduler.start()
@@ -153,6 +157,9 @@ if (not app.debug) or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
 
     # Load cron jobs into scheduler
     load_cron_jobs_into_scheduler(app)
+    
+    # Load satellite auto-sync configuration
+    schedule_satellite_auto_sync(app)
 
     # Shut down the scheduler when exiting the app
     atexit.register(lambda: scheduler.shutdown())

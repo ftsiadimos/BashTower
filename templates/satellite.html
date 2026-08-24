@@ -133,6 +133,50 @@
                     <p class="text-xs text-gray-400 mt-1">Used for all imported hosts</p>
                 </div>
 
+                <!-- Auto-Sync Settings -->
+                <div class="border-t border-gray-200 pt-4 mt-4">
+                    <h4 class="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <i class="fas fa-clock text-indigo-600"></i>Auto-Sync Configuration
+                    </h4>
+                    
+                    <!-- Enable Auto-Sync Toggle -->
+                    <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg mb-3">
+                        <input 
+                            v-model="satelliteForm.auto_sync_enabled" 
+                            type="checkbox"
+                            id="autoSyncToggle"
+                            class="w-4 h-4 text-indigo-600 rounded cursor-pointer"
+                        >
+                        <label for="autoSyncToggle" class="flex-1 cursor-pointer">
+                            <p class="text-sm font-medium text-gray-700">Enable Automatic Sync</p>
+                            <p class="text-xs text-gray-500">Periodically sync hosts from Satellite</p>
+                        </label>
+                    </div>
+
+                    <!-- Sync Interval (only show when auto-sync is enabled) -->
+                    <div v-if="satelliteForm.auto_sync_enabled" class="mb-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <i class="fas fa-hourglass-half mr-1 text-gray-400"></i> Sync Interval
+                        </label>
+                        <div class="flex gap-2">
+                            <input 
+                                v-model.number="satelliteForm.auto_sync_interval" 
+                                type="number"
+                                min="5"
+                                max="1440"
+                                class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition"
+                                placeholder="60"
+                            >
+                            <span class="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium">minutes</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1">Minimum: 5 min, Maximum: 1440 min (24h)</p>
+                        <p class="text-xs text-indigo-600 mt-2 flex items-center gap-1">
+                            <i class="fas fa-info-circle"></i>
+                            Hosts will be automatically imported/updated on each sync
+                        </p>
+                    </div>
+                </div>
+
                 <button type="submit" 
                     :disabled="satelliteLoading"
                     class="w-full py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
@@ -209,6 +253,43 @@
                         <i :class="syncMessage.includes('error') || syncMessage.includes('Error') ? 'fas fa-times-circle' : 'fas fa-check-circle'" class="mr-1"></i>
                         [[ syncMessage ]]
                     </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sync History Card -->
+        <div v-if="satelliteConfig.last_sync_time" class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div class="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-500 to-cyan-500">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-history text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-white">Last Sync Details</h3>
+                        <p class="text-xs text-white/70">Sync history and results</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-5">
+                <!-- Sync Log Entry -->
+                <div class="p-4 bg-gray-900 rounded-lg border border-gray-700 font-mono text-xs text-gray-100 overflow-x-auto">
+                    <div class="text-gray-500">
+                        <div class="mb-2 text-gray-400">[[ formatSyncLogTime(satelliteConfig.last_sync_time) ]] - services.satellite - INFO</div>
+                        <div class="text-green-400">[[ satelliteConfig.last_sync_status ]]</div>
+                    </div>
+                </div>
+
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-2 gap-3 mt-4">
+                    <div class="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <p class="text-xs text-blue-600 font-medium">Hosts Synced</p>
+                        <p class="text-2xl font-bold text-blue-900 mt-1">[[ satelliteConfig.last_sync_host_count ]]</p>
+                    </div>
+                    <div class="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                        <p class="text-xs text-purple-600 font-medium">Groups Synced</p>
+                        <p class="text-2xl font-bold text-purple-900 mt-1">[[ satelliteConfig.last_sync_group_count ]]</p>
+                    </div>
                 </div>
             </div>
         </div>

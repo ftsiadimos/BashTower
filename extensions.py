@@ -20,3 +20,8 @@ migrate = Migrate()
 # Scheduler instance
 # Configure with max_instances=1 to avoid duplicate overlapping job executions
 scheduler = BackgroundScheduler(job_defaults={'max_instances': 1})
+
+# Flask app instance reference (set by app.py after creation)
+# Used by scheduler jobs to access app context
+app_context = None
+

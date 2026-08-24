@@ -11,8 +11,9 @@ import logging
 import threading
 from datetime import datetime
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from extensions import db, scheduler
-from models import CronJob, CronJobLog, Host, AppSettings
+from models import CronJob, CronJobLog, Host, AppSettings, SatelliteConfig
 from services.ssh_service import execute_ssh_command
 
 # Configure logger for this module
@@ -159,3 +160,117 @@ def schedule_cron_job(app, cron_job):
         logger.info(f"Scheduled cron job '{cron_job.name}' (ID: {cron_job.id})")
     except Exception as e:
         logger.error(f"Failed to schedule cron job {cron_job.id}: {e}")
+
+
+# Auto-Sync Satellite Functions
+SATELLITE_AUTO_SYNC_JOB_ID = "satellite_auto_sync"
+
+
+def execute_satellite_auto_sync():
+    """Execute automatic Satellite sync based on configuration.
+    
+    This function is called periodically by the scheduler to sync satellite hosts
+    if auto-sync is enabled.
+    """
+    from extensions import app_context
+    
+    if not app_context:
+        logger.error("Cannot execute satellite auto-sync: app context not available")
+        return
+    
+    with app_context.app_context():
+        config = SatelliteConfig.query.get(1)
+        
+        if not config or not config.auto_sync_enabled:
+            logger.debug("Satellite auto-sync is disabled or not configured")
+            return
+        
+        # Import here to avoid circular imports
+        from routes.satellite import _sync_satellite_hosts_logic
+        
+        logger.info(f"Starting automatic Satellite sync")
+        
+        try:
+            success, message, details = _sync_satellite_hosts_logic(config, sync_hosts=True)
+            
+            # Update sync tracking info
+            config.last_sync_time = datetime.utcnow()
+            config.last_sync_status = message
+            config.last_sync_host_count = details.get('synced_host_count', 0)
+            config.last_sync_group_count = details.get('synced_group_count', 0)
+            db.session.commit()
+            
+            if success:
+                logger.info(f"Satellite auto-sync completed: {message}")
+            else:
+                logger.warning(f"Satellite auto-sync failed: {message}")
+        except Exception as e:
+            logger.exception(f"Error during Satellite auto-sync: {e}")
+
+
+def schedule_satellite_auto_sync(app):
+    """Schedule the automatic Satellite sync task."""
+    try:
+        with app.app_context():
+            config = SatelliteConfig.query.get(1)
+            
+            if not config or not config.auto_sync_enabled:
+                logger.debug("Satellite auto-sync is disabled; not scheduling")
+                return False
+            
+            # Convert minutes to a trigger
+            interval_minutes = config.auto_sync_interval
+            if interval_minutes < 5:
+                logger.warning(f"Satellite auto-sync interval {interval_minutes} is less than minimum (5 min), using 5")
+                interval_minutes = 5
+        
+        trigger = IntervalTrigger(minutes=interval_minutes)
+        existing = scheduler.get_job(SATELLITE_AUTO_SYNC_JOB_ID)
+        if existing:
+            logger.debug(f"Satellite auto-sync job already scheduled; replacing with new interval")
+        
+        scheduler.add_job(
+            func=execute_satellite_auto_sync,
+            trigger=trigger,
+            id=SATELLITE_AUTO_SYNC_JOB_ID,
+            replace_existing=True,
+        )
+        logger.info(f"Scheduled Satellite auto-sync with interval: {interval_minutes} minutes")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to schedule Satellite auto-sync: {e}")
+        return False
+
+
+def unschedule_satellite_auto_sync():
+    """Unschedule the automatic Satellite sync task."""
+    try:
+        existing = scheduler.get_job(SATELLITE_AUTO_SYNC_JOB_ID)
+        if existing:
+            scheduler.remove_job(SATELLITE_AUTO_SYNC_JOB_ID)
+            logger.info("Unscheduled Satellite auto-sync")
+            return True
+        else:
+            logger.debug("Satellite auto-sync job not currently scheduled")
+            return False
+    except Exception as e:
+        logger.error(f"Failed to unschedule Satellite auto-sync: {e}")
+        return False
+
+
+def update_satellite_auto_sync_schedule(app):
+    """Update the Satellite auto-sync schedule based on current configuration.
+    
+    This should be called after the configuration is saved to enable/disable
+    or change the interval for automatic satellite syncing.
+    """
+    with app.app_context():
+        config = SatelliteConfig.query.get(1)
+        
+        if config and config.auto_sync_enabled:
+            # Enable or update the schedule
+            schedule_satellite_auto_sync(app)
+        else:
+            # Disable the schedule
+            unschedule_satellite_auto_sync()
+

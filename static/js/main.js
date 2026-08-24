@@ -101,8 +101,18 @@ const App = {
             // --- AI Script Assistant (moved to Templates module)
 
             // --- Satellite Sync ---
-            satelliteConfig: { url: '', username: '', ssh_username: 'ec2-user' },
-            satelliteForm: { url: '', username: '', password: '', ssh_username: 'ec2-user' }, 
+            satelliteConfig: { 
+                url: '', 
+                username: '', 
+                ssh_username: 'ec2-user', 
+                auto_sync_enabled: false, 
+                auto_sync_interval: 60,
+                last_sync_time: null,
+                last_sync_status: null,
+                last_sync_host_count: 0,
+                last_sync_group_count: 0,
+            },
+            satelliteForm: { url: '', username: '', password: '', ssh_username: 'ec2-user', auto_sync_enabled: false, auto_sync_interval: 60 }, 
             satelliteLoading: false,
             syncMessage: '',
 

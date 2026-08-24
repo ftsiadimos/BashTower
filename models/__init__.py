@@ -121,6 +121,12 @@ class SatelliteConfig(db.Model):
     username = db.Column(db.String(100), nullable=True)
     _password = db.Column('password', db.String(255), nullable=True)
     ssh_username = db.Column(db.String(100), default='ec2-user', nullable=True)
+    auto_sync_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    auto_sync_interval = db.Column(db.Integer, default=60, nullable=False)  # in minutes
+    last_sync_time = db.Column(db.DateTime, nullable=True)
+    last_sync_status = db.Column(db.String(500), nullable=True)
+    last_sync_host_count = db.Column(db.Integer, default=0, nullable=False)
+    last_sync_group_count = db.Column(db.Integer, default=0, nullable=False)
     
     @property
     def password(self):
